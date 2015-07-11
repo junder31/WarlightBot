@@ -46,6 +46,7 @@ public class BotStarter implements Bot
 					region.getSuperRegion().getSubRegions().size();
 			if(regionRank > selectedRegionRank) {
 				selectedRegion = region;
+				selectedRegionRank = regionRank;
 			}
 		}
 		

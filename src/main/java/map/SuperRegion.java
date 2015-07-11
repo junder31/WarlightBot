@@ -62,4 +62,10 @@ public class SuperRegion {
     public List<Region> getSubRegions() {
         return subRegions;
     }
+
+    @Override
+    public String toString() {
+        return "SuperRegion: [id: " + id + ", armiesReward: " + armiesReward +
+                ", RegionCount: " + subRegions.size() + " ]";
+    }
 }

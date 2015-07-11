@@ -84,19 +84,19 @@ public class BotStarter implements Bot {
                 }
             }
 
-            if(recruitRegion != null){
+            if (recruitRegion != null) {
                 attackRegions.add(recruitRegion);
                 unownedNeighbors.remove(recruitRegion);
                 List<Region> neighbors = recruitRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
                 Region neighbor = neighbors.stream().max(Comparator.comparingInt(r -> r.getArmies())).get();
-
+                System.err.println("Recruiting armies to attack " + recruitRegion);
                 if (neighbor.getArmies() < (recruitRegion.getArmies() * 3) / 2) {
                     int armies = ((recruitRegion.getArmies() * 3) / 2) - neighbor.getArmies();
-                    if( armies < 2) {
+                    if (armies < 2) {
                         armies = 2;
                     }
-                    if( armies > armiesLeft ) {
+                    if (armies > armiesLeft) {
                         armies = armiesLeft;
                     }
                     PlaceArmiesMove move = new PlaceArmiesMove(myName, neighbor, armies);
@@ -109,8 +109,8 @@ public class BotStarter implements Bot {
             } else {
                 System.err.println("No region to recruit for found.");
                 Region randomOwnedRegion = state.getVisibleGameBoard().getRegions().stream()
-                        .filter( r -> r.ownedByPlayer(myName) )
-                        .filter( r -> r.getNeighbors().stream().anyMatch( n -> !n.ownedByPlayer( myName) ) )
+                        .filter(r -> r.ownedByPlayer(myName))
+                        .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
                         .findAny().get();
                 PlaceArmiesMove move = new PlaceArmiesMove(myName, randomOwnedRegion, armiesLeft);
                 placeArmiesMoves.add(move);
@@ -134,7 +134,7 @@ public class BotStarter implements Bot {
 
         List<AttackTransferMove> attackMoves = new ArrayList<>();
 
-        for(Region dest : attackRegions) {
+        for (Region dest : attackRegions) {
             System.err.println("Creating move to attack " + dest);
             try {
                 Region source = dest.getNeighbors().stream()
@@ -142,24 +142,24 @@ public class BotStarter implements Bot {
                                 && r.getArmies() > (dest.getArmies() * 3) / 2
                                 && r.getArmies() > dest.getArmies() + 2).findAny().get();
                 System.err.println("Found source to attack from " + source);
-                    attackMoves.add(new AttackTransferMove(myName, source, dest, source.getArmies() - 1));
-                    source.setArmies(1);
+                attackMoves.add(new AttackTransferMove(myName, source, dest, source.getArmies() - 1));
+                source.setArmies(1);
             } catch (NoSuchElementException ex) {
                 System.err.println("Couldn't find suitable source to attack from.");
             }
         }
 
         List<AttackTransferMove> transferMoves = state.getVisibleGameBoard().getRegions().stream()
-                .filter( r ->
+                .filter(r ->
                         r.getArmies() > 1 && r.ownedByPlayer(myName) &&
-                                r.getNeighbors().stream().allMatch( rr -> rr.ownedByPlayer(myName) ) )
-                .map( source -> {
-                            Region dest = source.getNeighbors().stream()
-                                    .filter(neighbor -> neighbor.getNeighbors().stream()
-                                            .anyMatch(nn -> !nn.ownedByPlayer(myName)))
-                                    .findAny().orElse(source.getNeighbors().stream().findAny().get());
-                            return new AttackTransferMove(myName, source, dest, source.getArmies() - 1);
-                        }).collect(Collectors.toList());
+                                r.getNeighbors().stream().allMatch(rr -> rr.ownedByPlayer(myName)))
+                .map(source -> {
+                    Region dest = source.getNeighbors().stream()
+                            .filter(neighbor -> neighbor.getNeighbors().stream()
+                                    .anyMatch(nn -> !nn.ownedByPlayer(myName)))
+                            .findAny().orElse(source.getNeighbors().stream().findAny().get());
+                    return new AttackTransferMove(myName, source, dest, source.getArmies() - 1);
+                }).collect(Collectors.toList());
 
         attackTransferMoves.addAll(attackMoves);
         attackTransferMoves.addAll(transferMoves);

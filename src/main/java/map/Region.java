@@ -117,4 +117,9 @@ public class Region {
         return playerName;
     }
 
+    @Override
+    public String toString() {
+        return "Region: [id: " + id + ", Onwer: " + playerName + ", Armies: " + armies +
+                "SuperRegion: " + superRegion + " ]";
+    }
 }

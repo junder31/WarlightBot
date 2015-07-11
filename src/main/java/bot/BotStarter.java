@@ -25,7 +25,9 @@ import move.AttackTransferMove;
 import move.PlaceArmiesMove;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
@@ -87,14 +89,18 @@ public class BotStarter implements Bot {
                 unownedNeighbors.remove(recruitRegion);
                 List<Region> neighbors = recruitRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
-                int availableArmies = neighbors.stream().mapToInt(Region::getArmies).sum();
+                Region neighbor = neighbors.stream().max(Comparator.comparingInt(r -> r.getArmies())).get();
 
-                if (availableArmies < (recruitRegion.getArmies() * 3) / 2) {
-                    int armies = ((recruitRegion.getArmies() * 3) / 2) - availableArmies;
+                if (neighbor.getArmies() < (recruitRegion.getArmies() * 3) / 2) {
+                    int armies = ((recruitRegion.getArmies() * 3) / 2) - neighbor.getArmies();
+                    if( armies < 2) {
+                        armies = 2;
+                    }
                     if( armies > armiesLeft ) {
                         armies = armiesLeft;
                     }
-                    PlaceArmiesMove move = new PlaceArmiesMove(myName, neighbors.stream().findFirst().get(), armies);
+                    PlaceArmiesMove move = new PlaceArmiesMove(myName, neighbor, armies);
+                    neighbor.setArmies(neighbor.getArmies() + armies);
                     placeArmiesMoves.add(move);
                     armiesLeft -= armies;
                     System.err.println("Placing Armies " + move);
@@ -126,14 +132,22 @@ public class BotStarter implements Bot {
         ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<>();
         String myName = state.getMyPlayerName();
 
-        List<AttackTransferMove> attackMoves = attackRegions.stream()
-                .map(dest -> dest.getNeighbors().stream()
+        List<AttackTransferMove> attackMoves = new ArrayList<>();
+
+        for(Region dest : attackRegions) {
+            System.err.println("Creating move to attack " + dest);
+            try {
+                Region source = dest.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)
-                                && r.getArmies() > (dest.getArmies() * 4) / 3
-                                && r.getArmies() > dest.getArmies() + 3)
-                        .map(source -> new AttackTransferMove(myName, source, dest, source.getArmies() - 1))
-                        .collect(Collectors.toList()))
-                .flatMap(List::stream).collect(Collectors.toList());
+                                && r.getArmies() > (dest.getArmies() * 3) / 2
+                                && r.getArmies() > dest.getArmies() + 2).findAny().get();
+                System.err.println("Found source to attack from " + source);
+                    attackMoves.add(new AttackTransferMove(myName, source, dest, source.getArmies() - 1));
+                    source.setArmies(1);
+            } catch (NoSuchElementException ex) {
+                System.err.println("Couldn't find suitable source to attack from.");
+            }
+        }
 
         List<AttackTransferMove> transferMoves = state.getVisibleGameBoard().getRegions().stream()
                 .filter( r ->

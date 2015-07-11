@@ -22,14 +22,14 @@ public class AttackSuperRegionRanker {
     }
 
     public List<SuperRegion> getRankedSuperRegions() {
-        List<SuperRegion> superRegions = new ArrayList<>(state.getFullGameBoard().getSuperRegions());
+        List<SuperRegion> superRegions = new ArrayList<>(state.getVisibleGameBoard().getSuperRegions());
         superRegions.sort((sr1, sr2) -> getEnemyArmiesInSuperRegion(sr1) - getEnemyArmiesInSuperRegion(sr2) );
         log.debug("RankedSuperRegions: %s", superRegions);
         return superRegions;
     }
 
     public int getEnemyArmiesInSuperRegion(SuperRegion superRegion) {
-        return superRegion.getSubRegions().stream()
+        int superRegionArmyCount = superRegion.getSubRegions().stream()
                 .filter(r -> !r.ownedByPlayer(myName))
                 .mapToInt(r -> {
                     log.trace("Getting army count for Region: %s", r);
@@ -39,5 +39,7 @@ public class AttackSuperRegionRanker {
                         return r.getArmies();
                     }
                 }).sum();
+        log.debug("Counted %d armies in superRegion %s", superRegionArmyCount, superRegion);
+        return superRegionArmyCount;
     }
 }

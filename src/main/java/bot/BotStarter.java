@@ -72,7 +72,7 @@ public class BotStarter implements Bot {
                 .collect(Collectors.toList());
         List<Region> recruitedRegions = new ArrayList<>();
 
-        while (armiesLeft > 0) {
+        while (unownedNeighbors.size() > 0) {
             Region recruitRegion = null;
             long recruitRegionsNeededToOwnSuper = 1000;
             for (Region region : unownedNeighbors) {
@@ -88,10 +88,10 @@ public class BotStarter implements Bot {
             }
 
             System.err.println("Selected best region to attack " + recruitRegion);
+            attackRegions.add(recruitRegion);
+            unownedNeighbors.remove(recruitRegion);
 
-            if (recruitRegion != null) {
-                attackRegions.add(recruitRegion);
-                unownedNeighbors.remove(recruitRegion);
+            if (armiesLeft > 0) {
                 List<Region> neighbors = recruitRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
                 try {
@@ -99,10 +99,9 @@ public class BotStarter implements Bot {
                             .filter( r -> !recruitedRegions.contains(r) )
                             .max(Comparator.comparingInt(r -> r.getArmies())).get();
                     System.err.println("Recruiting armies to attack " + recruitRegion);
-                    if (neighbor.getArmies() < (recruitRegion.getArmies() * 3) / 2) {
+                    if (neighbor.getArmies() <= (recruitRegion.getArmies() * 3) / 2) {
                         int armies = ((recruitRegion.getArmies() * 3) / 2) - neighbor.getArmies();
                         if (armies < 2) {
-
                             armies = 2;
                         }
                         if (armies > armiesLeft) {
@@ -120,18 +119,18 @@ public class BotStarter implements Bot {
                     System.err.println("Could not find a suitable region to recruit " +
                             "armies for an attack on " + recruitRegion);
                 }
-
-            } else {
-                System.err.println("No region to recruit for found.");
-                Region randomOwnedRegion = state.getVisibleGameBoard().getRegions().stream()
-                        .filter(r -> r.ownedByPlayer(myName))
-                        .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
-                        .findAny().get();
-                PlaceArmiesMove move = new PlaceArmiesMove(myName, randomOwnedRegion, armiesLeft);
-                placeArmiesMoves.add(move);
-                armiesLeft = 0;
-                System.err.println("Placing all remaining armies " + move);
             }
+        }
+
+        if(armiesLeft > 0){
+            System.err.println("No region to recruit for found.");
+            Region randomOwnedRegion = state.getVisibleGameBoard().getRegions().stream()
+                    .filter(r -> r.ownedByPlayer(myName))
+                    .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
+                    .findAny().get();
+            PlaceArmiesMove move = new PlaceArmiesMove(myName, randomOwnedRegion, armiesLeft);
+            placeArmiesMoves.add(move);
+            System.err.println("Placing all remaining armies " + move);
         }
 
         return placeArmiesMoves;
@@ -155,7 +154,7 @@ public class BotStarter implements Bot {
                 Region source = dest.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)
                                 && r.getArmies() > (dest.getArmies() * 3) / 2
-                                && r.getArmies() > dest.getArmies() + 2).findAny().get();
+                                && r.getArmies() >= dest.getArmies() + 2).findAny().get();
                 System.err.println("Found source to attack from " + source);
                 attackMoves.add(new AttackTransferMove(myName, source, dest, source.getArmies() - 1));
                 source.setArmies(1);

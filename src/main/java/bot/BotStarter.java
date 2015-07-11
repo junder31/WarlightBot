@@ -70,42 +70,57 @@ public class BotStarter implements Bot {
         List<Region> unownedNeighbors = visibleRegions.stream()
                 .filter(region -> !region.ownedByPlayer(myName))
                 .collect(Collectors.toList());
+        List<Region> recruitedRegions = new ArrayList<>();
 
         while (armiesLeft > 0) {
             Region recruitRegion = null;
             long recruitRegionsNeededToOwnSuper = 1000;
             for (Region region : unownedNeighbors) {
+                System.err.println("Evaluating whether to attack " + region);
                 long regionsNeeded = region.getSuperRegion().getSubRegions().stream().
                         filter(r -> !r.ownedByPlayer(myName)).count();
                 if (regionsNeeded < recruitRegionsNeededToOwnSuper &&
                         (recruitRegion == null || region.getArmies() < recruitRegion.getArmies())) {
+                    System.err.println("Current best region to attack " + region);
                     recruitRegion = region;
                     recruitRegionsNeededToOwnSuper = regionsNeeded;
                 }
             }
+
+            System.err.println("Selected best region to attack " + recruitRegion);
 
             if (recruitRegion != null) {
                 attackRegions.add(recruitRegion);
                 unownedNeighbors.remove(recruitRegion);
                 List<Region> neighbors = recruitRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
-                Region neighbor = neighbors.stream().max(Comparator.comparingInt(r -> r.getArmies())).get();
-                System.err.println("Recruiting armies to attack " + recruitRegion);
-                if (neighbor.getArmies() < (recruitRegion.getArmies() * 3) / 2) {
-                    int armies = ((recruitRegion.getArmies() * 3) / 2) - neighbor.getArmies();
-                    if (armies < 2) {
-                        armies = 2;
+                try {
+                    Region neighbor = neighbors.stream()
+                            .filter( r -> !recruitedRegions.contains(r) )
+                            .max(Comparator.comparingInt(r -> r.getArmies())).get();
+                    System.err.println("Recruiting armies to attack " + recruitRegion);
+                    if (neighbor.getArmies() < (recruitRegion.getArmies() * 3) / 2) {
+                        int armies = ((recruitRegion.getArmies() * 3) / 2) - neighbor.getArmies();
+                        if (armies < 2) {
+
+                            armies = 2;
+                        }
+                        if (armies > armiesLeft) {
+                            armies = armiesLeft;
+                        }
+                        PlaceArmiesMove move = new PlaceArmiesMove(myName, neighbor, armies);
+                        neighbor.setArmies(neighbor.getArmies() + armies);
+                        placeArmiesMoves.add(move);
+                        armiesLeft -= armies;
+                        recruitedRegions.add(neighbor);
+                        System.err.println("Placing Armies " + move);
+                        System.err.println("Armies remaining " + armiesLeft);
                     }
-                    if (armies > armiesLeft) {
-                        armies = armiesLeft;
-                    }
-                    PlaceArmiesMove move = new PlaceArmiesMove(myName, neighbor, armies);
-                    neighbor.setArmies(neighbor.getArmies() + armies);
-                    placeArmiesMoves.add(move);
-                    armiesLeft -= armies;
-                    System.err.println("Placing Armies " + move);
-                    System.err.println("Armies remaining " + armiesLeft);
+                } catch (NoSuchElementException ex) {
+                    System.err.println("Could not find a suitable region to recruit " +
+                            "armies for an attack on " + recruitRegion);
                 }
+
             } else {
                 System.err.println("No region to recruit for found.");
                 Region randomOwnedRegion = state.getVisibleGameBoard().getRegions().stream()
@@ -145,7 +160,7 @@ public class BotStarter implements Bot {
                 attackMoves.add(new AttackTransferMove(myName, source, dest, source.getArmies() - 1));
                 source.setArmies(1);
             } catch (NoSuchElementException ex) {
-                System.err.println("Couldn't find suitable source to attack from.");
+                System.err.println("Could not find suitable source to attack from.");
             }
         }
 
@@ -168,6 +183,7 @@ public class BotStarter implements Bot {
     }
 
     public static void main(String[] args) {
+        System.err.println("Bot Started");
         BotParser parser = new BotParser(new BotStarter());
         parser.run();
     }

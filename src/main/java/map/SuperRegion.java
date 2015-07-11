@@ -11,6 +11,7 @@
 package map;
 
 import java.util.LinkedList;
+import java.util.List;
 
 public class SuperRegion {
 
@@ -58,7 +59,7 @@ public class SuperRegion {
     /**
      * @return A list with the Regions that are part of this SuperRegion
      */
-    public LinkedList<Region> getSubRegions() {
+    public List<Region> getSubRegions() {
         return subRegions;
     }
 }

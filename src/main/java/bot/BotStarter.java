@@ -26,6 +26,7 @@ import move.PlaceArmiesMove;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
     @Override
@@ -60,19 +61,30 @@ public class BotStarter implements Bot {
 
         List<PlaceArmiesMove> placeArmiesMoves = new ArrayList<>();
         String myName = state.getMyPlayerName();
-        int armies = 2;
         int armiesLeft = state.getStartingArmies();
         List<Region> visibleRegions = state.getVisibleGameBoard().getRegions();
+        List<Region> unownedNeighbors = visibleRegions.stream()
+                .filter(region -> !region.ownedByPlayer(myName))
+                .collect(Collectors.toList());
 
         while (armiesLeft > 0) {
-            double rand = Math.random();
-            int r = (int) (rand * visibleRegions.size());
-            Region region = visibleRegions.get(r);
-
-            if (region.ownedByPlayer(myName)) {
-                placeArmiesMoves.add(new PlaceArmiesMove(myName, region, armies));
-                armiesLeft -= armies;
+            Region recruitRegion = null;
+            long recruitRegionsNeededToOwnSuper = 1000;
+            for (Region region : unownedNeighbors) {
+                long regionsNeeded = region.getSuperRegion().getSubRegions().stream().
+                        filter(r -> !r.ownedByPlayer(myName)).count();
+                if (regionsNeeded < recruitRegionsNeededToOwnSuper &&
+                        recruitRegion != null && region.getArmies() < recruitRegion.getArmies()) {
+                    recruitRegion = region;
+                    recruitRegionsNeededToOwnSuper = regionsNeeded;
+                }
             }
+
+            Region region = recruitRegion.getNeighbors().stream()
+                    .filter(r -> r.ownedByPlayer(myName)).findFirst().get();
+            int armies = recruitRegion.getArmies() + 1;
+            placeArmiesMoves.add(new PlaceArmiesMove(myName, region, armies));
+            armiesLeft -= armies;
         }
 
         return placeArmiesMoves;

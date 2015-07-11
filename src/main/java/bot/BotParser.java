@@ -10,7 +10,7 @@
 
 package bot;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import map.Region;
@@ -53,14 +53,14 @@ public class BotParser {
 				if(parts[1].equals("place_armies")) 
 				{
 					//place armies
-					ArrayList<PlaceArmiesMove> placeArmiesMoves = bot.getPlaceArmiesMoves(currentState, Long.valueOf(parts[2]));
+					List<PlaceArmiesMove> placeArmiesMoves = bot.getPlaceArmiesMoves(currentState, Long.valueOf(parts[2]));
 					for(PlaceArmiesMove move : placeArmiesMoves)
 						output = output.concat(move.getString() + ",");
 				} 
 				else if(parts[1].equals("attack/transfer")) 
 				{
 					//attack/transfer
-					ArrayList<AttackTransferMove> attackTransferMoves = bot.getAttackTransferMoves(currentState, Long.valueOf(parts[2]));
+					List<AttackTransferMove> attackTransferMoves = bot.getAttackTransferMoves(currentState, Long.valueOf(parts[2]));
 					for(AttackTransferMove move : attackTransferMoves)
 						output = output.concat(move.getString() + ",");
 				}

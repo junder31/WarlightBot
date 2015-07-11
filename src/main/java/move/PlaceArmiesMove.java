@@ -52,7 +52,8 @@ public class PlaceArmiesMove extends Move {
     /**
      * @return A string representation of this Move
      */
-    public String getString() {
+    @Override
+    public String toString() {
         if (getIllegalMove().equals(""))
             return getPlayerName() + " place_armies " + region.getId() + " " + armies;
         else

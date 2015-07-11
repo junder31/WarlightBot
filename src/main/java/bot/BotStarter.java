@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
+    private List<Region> attackRegions = new ArrayList<>();
+
     @Override
     /**
      * A method that returns which region the bot would like to start on, the pickable regions are stored in the BotState.
@@ -48,7 +50,7 @@ public class BotStarter implements Bot {
             }
         }
 
-        return selectedRegion;
+        return selectedRegion != null ? selectedRegion : state.getPickableStartingRegions().stream().findAny().get();
     }
 
     @Override
@@ -58,7 +60,7 @@ public class BotStarter implements Bot {
      * @return The list of PlaceArmiesMoves for one round
      */
     public List<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) {
-
+        attackRegions = new ArrayList<>();
         List<PlaceArmiesMove> placeArmiesMoves = new ArrayList<>();
         String myName = state.getMyPlayerName();
         int armiesLeft = state.getStartingArmies();
@@ -74,17 +76,41 @@ public class BotStarter implements Bot {
                 long regionsNeeded = region.getSuperRegion().getSubRegions().stream().
                         filter(r -> !r.ownedByPlayer(myName)).count();
                 if (regionsNeeded < recruitRegionsNeededToOwnSuper &&
-                        recruitRegion != null && region.getArmies() < recruitRegion.getArmies()) {
+                        (recruitRegion == null || region.getArmies() < recruitRegion.getArmies())) {
                     recruitRegion = region;
                     recruitRegionsNeededToOwnSuper = regionsNeeded;
                 }
             }
 
-            Region region = recruitRegion.getNeighbors().stream()
-                    .filter(r -> r.ownedByPlayer(myName)).findFirst().get();
-            int armies = recruitRegion.getArmies() + 1;
-            placeArmiesMoves.add(new PlaceArmiesMove(myName, region, armies));
-            armiesLeft -= armies;
+            if(recruitRegion != null){
+                attackRegions.add(recruitRegion);
+                unownedNeighbors.remove(recruitRegion);
+                List<Region> neighbors = recruitRegion.getNeighbors().stream()
+                        .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
+                int availableArmies = neighbors.stream().mapToInt(Region::getArmies).sum();
+
+                if (availableArmies < (recruitRegion.getArmies() * 3) / 2) {
+                    int armies = ((recruitRegion.getArmies() * 3) / 2) - availableArmies;
+                    if( armies > armiesLeft ) {
+                        armies = armiesLeft;
+                    }
+                    PlaceArmiesMove move = new PlaceArmiesMove(myName, neighbors.stream().findFirst().get(), armies);
+                    placeArmiesMoves.add(move);
+                    armiesLeft -= armies;
+                    System.err.println("Placing Armies " + move);
+                    System.err.println("Armies remaining " + armiesLeft);
+                }
+            } else {
+                System.err.println("No region to recruit for found.");
+                Region randomOwnedRegion = state.getVisibleGameBoard().getRegions().stream()
+                        .filter( r -> r.ownedByPlayer(myName) )
+                        .filter( r -> r.getNeighbors().stream().anyMatch( n -> !n.ownedByPlayer( myName) ) )
+                        .findAny().get();
+                PlaceArmiesMove move = new PlaceArmiesMove(myName, randomOwnedRegion, armiesLeft);
+                placeArmiesMoves.add(move);
+                armiesLeft = 0;
+                System.err.println("Placing all remaining armies " + move);
+            }
         }
 
         return placeArmiesMoves;
@@ -99,36 +125,30 @@ public class BotStarter implements Bot {
     public List<AttackTransferMove> getAttackTransferMoves(BotState state, Long timeOut) {
         ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<>();
         String myName = state.getMyPlayerName();
-        int armies = 5;
-        int maxTransfers = 10;
-        int transfers = 0;
 
-        for (Region fromRegion : state.getVisibleGameBoard().getRegions()) {
-            if (fromRegion.ownedByPlayer(myName)) //do an attack
-            {
-                ArrayList<Region> possibleToRegions = new ArrayList<>();
-                possibleToRegions.addAll(fromRegion.getNeighbors());
+        List<AttackTransferMove> attackMoves = attackRegions.stream()
+                .map(dest -> dest.getNeighbors().stream()
+                        .filter(r -> r.ownedByPlayer(myName)
+                                && r.getArmies() > (dest.getArmies() * 4) / 3
+                                && r.getArmies() > dest.getArmies() + 3)
+                        .map(source -> new AttackTransferMove(myName, source, dest, source.getArmies() - 1))
+                        .collect(Collectors.toList()))
+                .flatMap(List::stream).collect(Collectors.toList());
 
-                while (!possibleToRegions.isEmpty()) {
-                    double rand = Math.random();
-                    int r = (int) (rand * possibleToRegions.size());
-                    Region toRegion = possibleToRegions.get(r);
+        List<AttackTransferMove> transferMoves = state.getVisibleGameBoard().getRegions().stream()
+                .filter( r ->
+                        r.getArmies() > 1 && r.ownedByPlayer(myName) &&
+                                r.getNeighbors().stream().allMatch( rr -> rr.ownedByPlayer(myName) ) )
+                .map( source -> {
+                            Region dest = source.getNeighbors().stream()
+                                    .filter(neighbor -> neighbor.getNeighbors().stream()
+                                            .anyMatch(nn -> !nn.ownedByPlayer(myName)))
+                                    .findAny().orElse(source.getNeighbors().stream().findAny().get());
+                            return new AttackTransferMove(myName, source, dest, source.getArmies() - 1);
+                        }).collect(Collectors.toList());
 
-                    if (!toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 6) //do an attack
-                    {
-                        attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
-                        break;
-                    } else if (toRegion.getPlayerName().equals(myName) && fromRegion.getArmies() > 1
-                            && transfers < maxTransfers) //do a transfer
-                    {
-                        attackTransferMoves.add(new AttackTransferMove(myName, fromRegion, toRegion, armies));
-                        transfers++;
-                        break;
-                    } else
-                        possibleToRegions.remove(toRegion);
-                }
-            }
-        }
+        attackTransferMoves.addAll(attackMoves);
+        attackTransferMoves.addAll(transferMoves);
 
         return attackTransferMoves;
     }

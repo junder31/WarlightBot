@@ -29,10 +29,10 @@ public class AttackListRanker {
         List<SuperRegion> rankedSuperRegions = new AttackSuperRegionRanker(state).getRankedSuperRegions();
 
         unownedNeighbors.sort((r1, r2) -> {
-            if(rankedSuperRegions.indexOf(r1) == rankedSuperRegions.indexOf(r2) ) {
+            if(rankedSuperRegions.indexOf(r1.getSuperRegion()) == rankedSuperRegions.indexOf(r2.getSuperRegion()) ) {
                 return r1.getArmies() - r2.getArmies();
             } else {
-                return rankedSuperRegions.indexOf(r2) - rankedSuperRegions.indexOf(r1);
+                return rankedSuperRegions.indexOf(r1.getSuperRegion()) - rankedSuperRegions.indexOf(r2.getSuperRegion());
             }
         });
 

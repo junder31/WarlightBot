@@ -39,7 +39,7 @@ public class AttackSuperRegionRanker {
                         return r.getArmies();
                     }
                 }).sum();
-        log.debug("Counted %d armies in superRegion %s", superRegionArmyCount, superRegion);
+        log.trace("Counted %d armies in superRegion %s", superRegionArmyCount, superRegion);
         return superRegionArmyCount;
     }
 }

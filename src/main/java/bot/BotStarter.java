@@ -25,15 +25,14 @@ import map.Region;
 import move.AttackTransferMove;
 import move.PlaceArmiesMove;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
     private static Logger log = new Logger(BotStarter.class.getSimpleName());
-    private List<AttackTransferMove> attackMoves = null;
+    private List<AttackTransferMove> attackMoves = new ArrayList<>();
+    private Map<Region,Integer> extraEffort = new HashMap<>();
+
 
     @Override
     /**
@@ -57,6 +56,16 @@ public class BotStarter implements Bot {
         return selectedRegion != null ? selectedRegion : state.getPickableStartingRegions().stream().findAny().get();
     }
 
+    private void updateExtraEffort(List<Region> regionsAttackedLastTurn, List<Region> regionsToAttackThisTurn) {
+        for(Region region : regionsToAttackThisTurn ) {
+            if(regionsToAttackThisTurn.contains(region) && regionsAttackedLastTurn.contains(region) ) {
+                extraEffort.put(region, extraEffort.get(region) + 2);
+            } else {
+                extraEffort.put(region, 0);
+            }
+        }
+    }
+
     @Override
     /**
      * This method is called for at first part of each round. This example puts two armies on random regions
@@ -65,16 +74,21 @@ public class BotStarter implements Bot {
      */
     public List<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) {
         List<PlaceArmiesMove> placeArmiesMoves = new ArrayList<>();
-        attackMoves = new ArrayList<>();
 
         try {
             List<Region> attackRegions = new AttackListRanker(state).getRankedAttackList();
+            List<Region> attackedRegions = attackMoves.stream()
+                    .map( r -> r.getFromRegion() ).collect(Collectors.toList());
+
+            updateExtraEffort(attackedRegions, attackRegions);
+            log.debug("Extra Effort: %s", extraEffort);
+            attackMoves = new ArrayList<>();
             String myName = state.getMyPlayerName();
             int armiesLeft = state.getStartingArmies();
 
             for(Region attackRegion : attackRegions) {
                 log.info("Selected best region to attack " + attackRegion);
-                int requiredArmies = (int)Math.ceil(attackRegion.getArmies() * 1.5);
+                int requiredArmies = (int)Math.ceil(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
                 log.debug("Armies required to attack %d", requiredArmies);
                 List<Region> neighbors = attackRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
@@ -146,7 +160,7 @@ public class BotStarter implements Bot {
     }
 
     public static void main(String[] args) {
-        System.err.println("Bot Started");
+        log.info("Bot Started");
         BotParser parser = new BotParser(new BotStarter());
         parser.run();
     }

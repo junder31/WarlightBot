@@ -15,8 +15,8 @@ public class LogConfig {
     private Map<String,LogLevel> loggerLevels = new HashMap<>();
 
     private LogConfig() {
-        loggerLevels.put(AttackSuperRegionRanker.class.getSimpleName(), LogLevel.DEBUG);
-        loggerLevels.put(AttackListRanker.class.getSimpleName(), LogLevel.DEBUG);
+        loggerLevels.put(AttackSuperRegionRanker.class.getSimpleName(), LogLevel.INFO);
+        loggerLevels.put(AttackListRanker.class.getSimpleName(), LogLevel.INFO);
     }
 
     public static synchronized LogConfig getInstance() {

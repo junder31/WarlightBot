@@ -11,6 +11,7 @@
 package map;
 
 import java.util.LinkedList;
+import java.util.Objects;
 
 
 public class Region {
@@ -121,5 +122,21 @@ public class Region {
     public String toString() {
         return "Region: [id: " + id + ", Onwer: " + playerName + ", Armies: " + armies +
                 ", SuperRegion: " + superRegion.getId() + " ]";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Region region = (Region) o;
+
+        return id == region.id;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return id;
     }
 }

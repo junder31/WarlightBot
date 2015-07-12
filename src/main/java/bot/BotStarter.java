@@ -22,6 +22,7 @@ package bot;
 
 import log.Logger;
 import map.Region;
+import map.SuperRegion;
 import move.AttackTransferMove;
 import move.PlaceArmiesMove;
 
@@ -42,14 +43,14 @@ public class BotStarter implements Bot {
      */
     public Region getStartingRegion(BotState state, Long timeOut) {
         List<Region> pickableRegions = state.getPickableStartingRegions();
+        List<SuperRegion> superRegionRank = new AttackSuperRegionRanker(state).getRankedSuperRegions();
         Region selectedRegion = null;
-        double selectedRegionRank = 0;
+        int superRegionRankIdx = superRegionRank.size();
         for (Region region : pickableRegions) {
-            double regionRank = (region.getSuperRegion().getArmiesReward() * 1.0) /
-                    region.getSuperRegion().getSubRegions().size();
-            if (regionRank > selectedRegionRank) {
+            int regionSuperRegionRankIdx = superRegionRank.indexOf(region);
+            if (regionSuperRegionRankIdx < superRegionRankIdx) {
                 selectedRegion = region;
-                selectedRegionRank = regionRank;
+                superRegionRankIdx = regionSuperRegionRankIdx;
             }
         }
 
@@ -78,7 +79,7 @@ public class BotStarter implements Bot {
         try {
             List<Region> attackRegions = new AttackListRanker(state).getRankedAttackList();
             List<Region> attackedRegions = attackMoves.stream()
-                    .map( r -> r.getFromRegion() ).collect(Collectors.toList());
+                    .map(r -> r.getToRegion()).collect(Collectors.toList());
 
             updateExtraEffort(attackedRegions, attackRegions);
             log.debug("Extra Effort: %s", extraEffort);

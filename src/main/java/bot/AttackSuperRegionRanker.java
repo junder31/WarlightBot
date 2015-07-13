@@ -28,12 +28,17 @@ public class AttackSuperRegionRanker {
                 if( sr2.getArmiesReward() == 0) {
                     return 0;
                 } else {
-                    return -1;
+                    return 1;
                 }
             } else if (sr2.getArmiesReward() == 0 ) {
-                return 1;
+                return -1;
             } else {
-                return getEnemyArmiesInSuperRegion(sr1) - getEnemyArmiesInSuperRegion(sr2);
+                int armiesToTakeDif = getEnemyArmiesInSuperRegion(sr1) - getEnemyArmiesInSuperRegion(sr2);
+                if( armiesToTakeDif == 0 ) {
+                    return sr2.getArmiesReward() - sr1.getArmiesReward();
+                } else {
+                    return armiesToTakeDif;
+                }
             }
         } );
         log.debug("RankedSuperRegions: %s", superRegions);

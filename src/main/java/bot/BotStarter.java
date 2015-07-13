@@ -42,6 +42,7 @@ public class BotStarter implements Bot {
      * This method returns one random region from the given pickable regions.
      */
     public Region getStartingRegion(BotState state, Long timeOut) {
+        state.updateMap(new String[0]);
         List<Region> pickableRegions = state.getPickableStartingRegions();
         List<SuperRegion> superRegionRank = new AttackSuperRegionRanker(state).getRankedSuperRegions();
         Region selectedRegion = null;
@@ -60,7 +61,7 @@ public class BotStarter implements Bot {
     private void updateExtraEffort(List<Region> regionsAttackedLastTurn, List<Region> regionsToAttackThisTurn) {
         for(Region region : regionsToAttackThisTurn ) {
             if(regionsToAttackThisTurn.contains(region) && regionsAttackedLastTurn.contains(region) ) {
-                extraEffort.put(region, extraEffort.get(region) + 2);
+                extraEffort.put(region, extraEffort.get(region) + 3);
             } else {
                 extraEffort.put(region, 0);
             }
@@ -89,11 +90,11 @@ public class BotStarter implements Bot {
 
             for(Region attackRegion : attackRegions) {
                 log.info("Selected best region to attack " + attackRegion);
-                int requiredArmies = (int)Math.ceil(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
+                int requiredArmies = (int)Math.ceil(attackRegion.getArmies() * 3.0 / 2.0) + extraEffort.get(attackRegion);
                 log.debug("Armies required to attack %d", requiredArmies);
                 List<Region> neighbors = attackRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
-                neighbors.sort((r1, r2) -> r1.getArmies() - r2.getArmies());
+                neighbors.sort((r1, r2) -> r2.getArmies() - r1.getArmies());
                 Region sourceRegion = neighbors.get(0);
 
                 if(armiesLeft > 0 && sourceRegion.getArmies() <= requiredArmies) {

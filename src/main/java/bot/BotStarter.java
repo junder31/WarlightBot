@@ -62,10 +62,15 @@ public class BotStarter implements Bot {
         for(Region region : regionsToAttackThisTurn ) {
             if(regionsToAttackThisTurn.contains(region) && regionsAttackedLastTurn.contains(region) ) {
                 extraEffort.put(region, extraEffort.get(region) + 3);
+                log.debug("Set extra effort %s to %d", region, extraEffort.get(region));
             } else {
                 extraEffort.put(region, 0);
             }
         }
+    }
+
+    private void logExtraEffort() {
+
     }
 
     @Override
@@ -83,14 +88,19 @@ public class BotStarter implements Bot {
                     .map(r -> r.getToRegion()).collect(Collectors.toList());
 
             updateExtraEffort(attackedRegions, attackRegions);
-            log.debug("Extra Effort: %s", extraEffort);
+            logExtraEffort();
             attackMoves = new ArrayList<>();
             String myName = state.getMyPlayerName();
             int armiesLeft = state.getStartingArmies();
 
             for(Region attackRegion : attackRegions) {
-                log.info("Selected best region to attack " + attackRegion);
-                int requiredArmies = (int)Math.ceil(attackRegion.getArmies() * 3.0 / 2.0) + extraEffort.get(attackRegion);
+                log.debug("Selected best region to attack " + attackRegion);
+                int requiredArmies;
+                if(attackRegion.getArmies() < 6) {
+                    requiredArmies = (int)Math.floor(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
+                } else {
+                    requiredArmies = (int)Math.floor(attackRegion.getArmies() * 1.7) + extraEffort.get(attackRegion);
+                }
                 log.debug("Armies required to attack %d", requiredArmies);
                 List<Region> neighbors = attackRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());

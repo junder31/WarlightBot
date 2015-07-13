@@ -97,7 +97,7 @@ public class BotStarter implements Bot {
                 log.debug("Selected best region to attack " + attackRegion);
                 int requiredArmies;
                 if(attackRegion.getArmies() < 6) {
-                    requiredArmies = (int)Math.floor(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
+                    requiredArmies = (int)Math.ceil(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
                 } else {
                     requiredArmies = (int)Math.floor(attackRegion.getArmies() * 1.7) + extraEffort.get(attackRegion);
                 }

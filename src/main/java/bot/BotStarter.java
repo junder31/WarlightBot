@@ -28,6 +28,7 @@ import move.PlaceArmiesMove;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import static bot.Settings.*;
 
 public class BotStarter implements Bot {
     private static Logger log = new Logger(BotStarter.class.getSimpleName());
@@ -48,7 +49,7 @@ public class BotStarter implements Bot {
         Region selectedRegion = null;
         int superRegionRankIdx = superRegionRank.size();
         for (Region region : pickableRegions) {
-            int regionSuperRegionRankIdx = superRegionRank.indexOf(region);
+            int regionSuperRegionRankIdx = superRegionRank.indexOf(region.getSuperRegion());
             if (regionSuperRegionRankIdx < superRegionRankIdx) {
                 selectedRegion = region;
                 superRegionRankIdx = regionSuperRegionRankIdx;
@@ -61,7 +62,7 @@ public class BotStarter implements Bot {
     private void updateExtraEffort(List<Region> regionsAttackedLastTurn, List<Region> regionsToAttackThisTurn) {
         for(Region region : regionsToAttackThisTurn ) {
             if(regionsToAttackThisTurn.contains(region) && regionsAttackedLastTurn.contains(region) ) {
-                extraEffort.put(region, extraEffort.get(region) + 3);
+                extraEffort.put(region, extraEffort.get(region) + EXTRA_EFFORT_FACTOR);
                 log.debug("Set extra effort %s to %d", region, extraEffort.get(region));
             } else {
                 extraEffort.put(region, 0);
@@ -133,9 +134,7 @@ public class BotStarter implements Bot {
                         .collect(Collectors.toList());
 
                 List<Region> enemyBorderRegions = borderRegions.stream()
-                        .filter(r ->
-                                r.getNeighbors().stream()
-                                        .anyMatch(n -> !n.ownedByPlayer(myName) && !n.ownedByPlayer("neutral")))
+                        .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByEnemyOfPlayer(myName)))
                         .collect(Collectors.toList());
 
                 if(enemyBorderRegions.size() > 0) {

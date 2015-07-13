@@ -7,6 +7,7 @@ import map.SuperRegion;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import static bot.Settings.*;
 
 /**
  * Created by johnunderwood on 7/11/15.
@@ -30,7 +31,11 @@ public class AttackListRanker {
 
         unownedNeighbors.sort((r1, r2) -> {
             if(rankedSuperRegions.indexOf(r1.getSuperRegion()) == rankedSuperRegions.indexOf(r2.getSuperRegion()) ) {
-                return r1.getArmies() - r2.getArmies();
+                int weightedR1Armies = r1.ownedByEnemyOfPlayer(myName) ?
+                        (int)Math.floor(r1.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r1.getArmies();
+                int weightedR2Armies = r2.ownedByEnemyOfPlayer(myName) ?
+                        (int)Math.floor(r2.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r2.getArmies();
+                return weightedR1Armies - weightedR2Armies;
             } else {
                 return rankedSuperRegions.indexOf(r1.getSuperRegion()) - rankedSuperRegions.indexOf(r2.getSuperRegion());
             }

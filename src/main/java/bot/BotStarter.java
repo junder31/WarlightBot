@@ -127,14 +127,44 @@ public class BotStarter implements Bot {
 
             if(armiesLeft > 0){
                 log.warn("No region to recruit for found.");
-                Region randomOwnedRegion = state.getVisibleGameBoard().getRegions().stream()
+                List<Region> borderRegions = state.getVisibleGameBoard().getRegions().stream()
                         .filter(r -> r.ownedByPlayer(myName))
                         .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
-                        .findAny().get();
-                PlaceArmiesMove move = new PlaceArmiesMove(myName, randomOwnedRegion, armiesLeft);
-                placeArmiesMoves.add(move);
-                randomOwnedRegion.setArmies(randomOwnedRegion.getArmies() + armiesLeft);
-                log.info("Placing all remaining armies " + move);
+                        .collect(Collectors.toList());
+
+                List<Region> enemyBorderRegions = borderRegions.stream()
+                        .filter(r ->
+                                r.getNeighbors().stream()
+                                        .anyMatch(n -> !n.ownedByPlayer(myName) && !n.ownedByPlayer("neutral")))
+                        .collect(Collectors.toList());
+
+                if(enemyBorderRegions.size() > 0) {
+                    log.info("Divinging remaining armies %d between enemeny border regions", armiesLeft);
+                    int armiesPerRegion = (int)Math.ceil( (1.0 * armiesLeft) / enemyBorderRegions.size() );
+                    for(Region r : enemyBorderRegions) {
+                        if(armiesPerRegion > armiesLeft) {
+                            armiesPerRegion = armiesLeft;
+                        }
+                        PlaceArmiesMove move = new PlaceArmiesMove(myName, r, armiesPerRegion);
+                        placeArmiesMoves.add(move);
+                        r.setArmies(r.getArmies() + armiesPerRegion);
+                        armiesLeft -= armiesPerRegion;
+                        log.info("Placing extra remaining armies " + move);
+                    }
+                } else {
+                    log.info("Divinging remaining armies %d between all border regions", armiesLeft);
+                    int armiesPerRegion = (int)Math.ceil( (1.0 * armiesLeft) / borderRegions.size() );
+                    for(Region r : borderRegions) {
+                        if(armiesPerRegion > armiesLeft) {
+                            armiesPerRegion = armiesLeft;
+                        }
+                        PlaceArmiesMove move = new PlaceArmiesMove(myName, r, armiesPerRegion);
+                        placeArmiesMoves.add(move);
+                        r.setArmies(r.getArmies() + armiesPerRegion);
+                        armiesLeft -= armiesPerRegion;
+                        log.info("Placing extra remaining armies " + move);
+                    }
+                }
             }
         } catch (Exception ex) {
             log.error("Exception while generating place army moves.", ex);

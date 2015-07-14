@@ -28,12 +28,13 @@ import move.PlaceArmiesMove;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
 import static bot.Settings.*;
 
 public class BotStarter implements Bot {
     private static Logger log = new Logger(BotStarter.class.getSimpleName());
     private List<AttackTransferMove> attackMoves = new ArrayList<>();
-    private Map<Region,Integer> extraEffort = new HashMap<>();
+    private Map<Region, Integer> extraEffort = new HashMap<>();
     private int roundNum = 0;
 
 
@@ -61,8 +62,8 @@ public class BotStarter implements Bot {
     }
 
     private void updateExtraEffort(List<Region> regionsAttackedLastTurn, List<Region> regionsToAttackThisTurn) {
-        for(Region region : regionsToAttackThisTurn ) {
-            if(regionsToAttackThisTurn.contains(region) && regionsAttackedLastTurn.contains(region) ) {
+        for (Region region : regionsToAttackThisTurn) {
+            if (regionsToAttackThisTurn.contains(region) && regionsAttackedLastTurn.contains(region)) {
                 extraEffort.put(region, extraEffort.get(region) + EXTRA_EFFORT_FACTOR);
                 log.debug("Set extra effort %s to %d", region, extraEffort.get(region));
             } else {
@@ -97,13 +98,13 @@ public class BotStarter implements Bot {
             String enemyName = state.getOpponentPlayerName();
             int armiesLeft = state.getStartingArmies();
 
-            for(Region attackRegion : attackRegions) {
+            for (Region attackRegion : attackRegions) {
                 log.debug("Selected best region to attack " + attackRegion);
                 int requiredArmies;
-                if(attackRegion.getArmies() < 6) {
-                    requiredArmies = (int)Math.ceil(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
+                if (attackRegion.getArmies() < 6) {
+                    requiredArmies = (int) Math.ceil(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
                 } else {
-                    requiredArmies = (int)Math.floor(attackRegion.getArmies() * 1.7) + extraEffort.get(attackRegion);
+                    requiredArmies = (int) Math.floor(attackRegion.getArmies() * 1.7) + extraEffort.get(attackRegion);
                 }
                 log.debug("Armies required to attack %d", requiredArmies);
                 List<Region> neighbors = attackRegion.getNeighbors().stream()
@@ -111,9 +112,9 @@ public class BotStarter implements Bot {
                 neighbors.sort((r1, r2) -> r2.getArmies() - r1.getArmies());
                 Region sourceRegion = neighbors.get(0);
 
-                if(armiesLeft > 0 && sourceRegion.getArmies() <= requiredArmies) {
+                if (armiesLeft > 0 && sourceRegion.getArmies() <= requiredArmies) {
                     int armiesToRecruit = requiredArmies - sourceRegion.getArmies() + 1;
-                    if(armiesToRecruit > armiesLeft) {
+                    if (armiesToRecruit > armiesLeft) {
                         armiesToRecruit = armiesLeft;
                     }
                     placeArmiesMoves.add(new PlaceArmiesMove(myName, sourceRegion, armiesToRecruit));
@@ -122,57 +123,70 @@ public class BotStarter implements Bot {
                     log.info("Recruiting %d armies in %s to attack %s", armiesToRecruit, sourceRegion, attackRegion);
                 }
 
-                if(sourceRegion.getArmies() > requiredArmies) {
+                if (sourceRegion.getArmies() > requiredArmies) {
                     attackMoves.add(new AttackTransferMove(myName, sourceRegion, attackRegion, requiredArmies));
                     sourceRegion.setArmies(sourceRegion.getArmies() - requiredArmies);
                     log.info("Attacking from %s to %s with %d armies", sourceRegion, attackRegion, requiredArmies);
                 }
             }
 
-            if(armiesLeft > 0){
+            if (armiesLeft > 0) {
                 log.warn("No region to recruit for found.");
-                List<Region> borderRegions = state.getVisibleGameBoard().getRegions().stream()
-                        .filter(r -> r.ownedByPlayer(myName))
-                        .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
-                        .collect(Collectors.toList());
-
-                List<Region> enemyBorderRegions = borderRegions.stream()
-                        .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(enemyName)))
-                        .collect(Collectors.toList());
-
-                if(enemyBorderRegions.size() > 0) {
-                    log.info("Divinging remaining armies %d between enemeny border regions", armiesLeft);
-                    int armiesPerRegion = (int)Math.ceil( (1.0 * armiesLeft) / enemyBorderRegions.size() );
-                    for(Region r : enemyBorderRegions) {
-                        if(armiesPerRegion > armiesLeft) {
-                            armiesPerRegion = armiesLeft;
-                        }
-                        PlaceArmiesMove move = new PlaceArmiesMove(myName, r, armiesPerRegion);
-                        placeArmiesMoves.add(move);
-                        r.setArmies(r.getArmies() + armiesPerRegion);
-                        armiesLeft -= armiesPerRegion;
-                        log.info("Placing extra remaining armies " + move);
-                    }
-                } else {
-                    log.info("Divinging remaining armies %d between all border regions", armiesLeft);
-                    int armiesPerRegion = (int)Math.ceil( (1.0 * armiesLeft) / borderRegions.size() );
-                    for(Region r : borderRegions) {
-                        if(armiesPerRegion > armiesLeft) {
-                            armiesPerRegion = armiesLeft;
-                        }
-                        PlaceArmiesMove move = new PlaceArmiesMove(myName, r, armiesPerRegion);
-                        placeArmiesMoves.add(move);
-                        r.setArmies(r.getArmies() + armiesPerRegion);
-                        armiesLeft -= armiesPerRegion;
-                        log.info("Placing extra remaining armies " + move);
-                    }
-                }
+                placeArmiesMoves.addAll(distributeRemainingArmies(state, armiesLeft));
             }
         } catch (Exception ex) {
             log.error("Exception while generating place army moves.", ex);
         }
 
         return placeArmiesMoves;
+    }
+
+    private List<PlaceArmiesMove> distributeRemainingArmies(BotState state, int armiesLeft) {
+        List<PlaceArmiesMove> moves = new ArrayList<>();
+
+        String myName = state.getMyPlayerName();
+        List<Region> borderRegions = getRegionsToDistributeTo(state);
+
+        log.info("Divinging remaining armies %d between all border regions", armiesLeft);
+        int armiesPerRegion = armiesLeft / borderRegions.size();
+        int leftOvers = armiesLeft % borderRegions.size();
+
+        for (Region r : borderRegions) {
+            int armiesToRecruit = armiesPerRegion;
+            if (leftOvers > 0) {
+                armiesToRecruit++;
+                leftOvers--;
+            }
+            PlaceArmiesMove move = new PlaceArmiesMove(myName, r, armiesToRecruit);
+            moves.add(move);
+            r.setArmies(r.getArmies() + armiesToRecruit);
+            armiesLeft -= armiesToRecruit;
+            log.info("Placing extra remaining armies " + move);
+        }
+
+        return moves;
+    }
+
+    private List<Region> getRegionsToDistributeTo(BotState state) {
+        String enemyName = state.getOpponentPlayerName();
+        //Get regions that border enemy
+        List<Region> regions = state.getVisibleGameBoard().getRegions().stream()
+                .filter(r -> r.getNeighbors().stream().anyMatch(n -> n.ownedByPlayer(enemyName)))
+                .collect(Collectors.toList());
+
+        if (regions.size() == 0) {
+            log.debug("No enemies within range.  Distributing remaining troops to any border region.");
+            //Get regions not owned by me
+            String myName = state.getMyPlayerName();
+            regions = state.getVisibleGameBoard().getRegions().stream()
+                    .filter(r -> r.ownedByPlayer(myName))
+                    .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
+                    .collect(Collectors.toList());
+        } else {
+            log.debug("Distributing remaining troops amonst all enemy border regions.");
+        }
+
+        return regions;
     }
 
     @Override
@@ -183,22 +197,8 @@ public class BotStarter implements Bot {
      */
     public List<AttackTransferMove> getAttackTransferMoves(BotState state, Long timeOut) {
         ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<>();
-        String myName = state.getMyPlayerName();
-
-        List<AttackTransferMove> transferMoves = state.getVisibleGameBoard().getRegions().stream()
-                .filter(r ->
-                        r.getArmies() > 1 && r.ownedByPlayer(myName) &&
-                                r.getNeighbors().stream().allMatch(rr -> rr.ownedByPlayer(myName)))
-                .map(source -> {
-                    Region dest = source.getNeighbors().stream()
-                            .filter(neighbor -> neighbor.getNeighbors().stream()
-                                    .anyMatch(nn -> !nn.ownedByPlayer(myName)))
-                            .findAny().orElse(source.getNeighbors().stream().findAny().get());
-                    return new AttackTransferMove(myName, source, dest, source.getArmies() - 1);
-                }).collect(Collectors.toList());
-
         attackTransferMoves.addAll(attackMoves);
-        attackTransferMoves.addAll(transferMoves);
+        attackTransferMoves.addAll(new TroopMovePlanner(state).getTransferMoves());
 
         log.info("Round %d done", roundNum);
         return attackTransferMoves;

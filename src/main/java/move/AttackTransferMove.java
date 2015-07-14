@@ -62,7 +62,8 @@ public class AttackTransferMove extends Move {
     /**
      * @return A string representation of this Move
      */
-    public String getString() {
+    @Override
+    public String toString() {
         if (getIllegalMove().equals(""))
             return getPlayerName() + " attack/transfer " + fromRegion.getId() + " " + toRegion.getId() + " " + armies;
         else

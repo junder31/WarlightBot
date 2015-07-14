@@ -56,7 +56,7 @@ public class BotParser {
                     //attack/transfer
                     List<AttackTransferMove> attackTransferMoves = bot.getAttackTransferMoves(currentState, Long.valueOf(parts[2]));
                     for (AttackTransferMove move : attackTransferMoves)
-                        output = output.concat(move.getString() + ",");
+                        output = output.concat(move.toString() + ",");
                 }
                 if (output.length() > 0)
                     System.out.println(output);

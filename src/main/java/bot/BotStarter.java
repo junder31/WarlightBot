@@ -147,7 +147,7 @@ public class BotStarter implements Bot {
         String myName = state.getMyPlayerName();
         List<Region> borderRegions = getRegionsToDistributeTo(state);
 
-        log.info("Divinging remaining armies %d between all border regions", armiesLeft);
+        log.info("Dividing remaining armies %d between all border regions", armiesLeft);
         int armiesPerRegion = armiesLeft / borderRegions.size();
         int leftOvers = armiesLeft % borderRegions.size();
 
@@ -168,16 +168,17 @@ public class BotStarter implements Bot {
     }
 
     private List<Region> getRegionsToDistributeTo(BotState state) {
+        String myName = state.getMyPlayerName();
         String enemyName = state.getOpponentPlayerName();
         //Get regions that border enemy
         List<Region> regions = state.getVisibleGameBoard().getRegions().stream()
+                .filter(r -> r.ownedByPlayer(myName))
                 .filter(r -> r.getNeighbors().stream().anyMatch(n -> n.ownedByPlayer(enemyName)))
                 .collect(Collectors.toList());
 
         if (regions.size() == 0) {
             log.debug("No enemies within range.  Distributing remaining troops to any border region.");
             //Get regions not owned by me
-            String myName = state.getMyPlayerName();
             regions = state.getVisibleGameBoard().getRegions().stream()
                     .filter(r -> r.ownedByPlayer(myName))
                     .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))

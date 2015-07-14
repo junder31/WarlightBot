@@ -34,14 +34,17 @@ public class TroopMovePlanner {
                                 r.getNeighbors().stream().allMatch(n ->
                                         n.ownedByPlayer(myName) || !n.ownedByPlayer(enemyName)))
                 .collect(Collectors.toList());
+        List<AttackTransferMove> transferMoves = new ArrayList<>();
 
-        Map<Region,Integer> distanceToEnemyMap = getDistanceToEnemyPlayer();
-        log.trace("Distance To Enemies: %s", distanceToEnemyMap);
-        List<AttackTransferMove> transferMoves = getMoves(sourceTransferRegions, distanceToEnemyMap);
+        if(sourceTransferRegions.size() > 0) {
+            Map<Region, Integer> distanceToEnemyMap = getDistanceToEnemyPlayer();
+            log.trace("Distance To Enemies: %s", distanceToEnemyMap);
+            transferMoves.addAll(getMoves(sourceTransferRegions, distanceToEnemyMap));
 
-        sourceTransferRegions.removeAll(transferMoves.stream()
-                .map(AttackTransferMove::getFromRegion)
-                .collect(Collectors.toList()));
+            sourceTransferRegions.removeAll(transferMoves.stream()
+                    .map(AttackTransferMove::getFromRegion)
+                    .collect(Collectors.toList()));
+        }
 
         if(sourceTransferRegions.size() > 0) {
             Map<Region,Integer> distanceToBorderMap = getDistanceToBorder();
@@ -62,19 +65,20 @@ public class TroopMovePlanner {
             if(destinations.size() > 0) {
                 destinations.sort( (r1, r2) -> dMap.get(r1) - dMap.get(r2) );
                 Region dest = destinations.get(0);
-
-                //if some destinations directly border the enemy transfer to dest with most armies
-                int i = 1;
-                while(dMap.get(dest) == 0  && i < destinations.size() ) {
-                    if(dest.getArmies() < destinations.get(i).getArmies()) {
-                        dest = destinations.get(i);
+                if(dMap.get(dest) < dMap.get(source)) {
+                    //if some destinations directly border the enemy transfer to dest with most armies
+                    int i = 1;
+                    while(dMap.get(dest) == 0  && i < destinations.size() ) {
+                        if(dest.getArmies() < destinations.get(i).getArmies()) {
+                            dest = destinations.get(i);
+                        }
+                        i++;
                     }
-                    i++;
-                }
 
-                AttackTransferMove move = new AttackTransferMove(myName, source, dest, source.getArmies() - 1);
-                log.info("Moving Troops: %s", move);
-                transferMoves.add(move);
+                    AttackTransferMove move = new AttackTransferMove(myName, source, dest, source.getArmies() - 1);
+                    log.info("Moving Troops: %s", move);
+                    transferMoves.add(move);
+                }
             }
         }
 

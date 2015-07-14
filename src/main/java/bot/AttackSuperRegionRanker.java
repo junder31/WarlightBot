@@ -14,12 +14,13 @@ public class AttackSuperRegionRanker {
     private static Logger log = new Logger(AttackSuperRegionRanker.class.getSimpleName());
 
     private final String myName;
+    private final String enemyName;
     private final BotState state;
 
     public AttackSuperRegionRanker(BotState state) {
         this.state = state;
         this.myName = state.getMyPlayerName();
-        log.debug("Wastelands: %s", state.getWasteLands());
+        this.enemyName = state.getOpponentPlayerName();
     }
 
     public List<SuperRegion> getRankedSuperRegions() {
@@ -50,11 +51,10 @@ public class AttackSuperRegionRanker {
         int superRegionArmyCount = superRegion.getSubRegions().stream()
                 .filter(r -> !r.ownedByPlayer(myName))
                 .mapToInt(r -> {
-                    log.trace("Getting army count for Region: %s", r);
                     if (r.getArmies() == 0) {
                         return state.getWasteLands().contains(r) ? WASTELAND_ARMIES : NORMAL_ARMIES;
                     } else {
-                        return r.ownedByEnemyOfPlayer(myName) ?
+                        return r.ownedByPlayer(enemyName) ?
                                 (int)Math.floor(r.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r.getArmies();
                     }
                 }).sum();

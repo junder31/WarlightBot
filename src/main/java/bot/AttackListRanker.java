@@ -17,11 +17,13 @@ public class AttackListRanker {
     private final BotState state;
     private final GameBoard gameBoard;
     private final String myName;
+    private final String enemyName;
 
     public AttackListRanker(BotState state) {
         this.state = state;
         this.gameBoard = state.getVisibleGameBoard();
         this.myName = state.getMyPlayerName();
+        this.enemyName = state.getOpponentPlayerName();
     }
 
     public List<Region> getRankedAttackList() {
@@ -31,9 +33,9 @@ public class AttackListRanker {
 
         unownedNeighbors.sort((r1, r2) -> {
             if(rankedSuperRegions.indexOf(r1.getSuperRegion()) == rankedSuperRegions.indexOf(r2.getSuperRegion()) ) {
-                int weightedR1Armies = r1.ownedByEnemyOfPlayer(myName) ?
+                int weightedR1Armies = r1.ownedByPlayer(enemyName) ?
                         (int)Math.floor(r1.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r1.getArmies();
-                int weightedR2Armies = r2.ownedByEnemyOfPlayer(myName) ?
+                int weightedR2Armies = r2.ownedByPlayer(enemyName) ?
                         (int)Math.floor(r2.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r2.getArmies();
                 return weightedR1Armies - weightedR2Armies;
             } else {

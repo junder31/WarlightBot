@@ -34,6 +34,7 @@ public class BotStarter implements Bot {
     private static Logger log = new Logger(BotStarter.class.getSimpleName());
     private List<AttackTransferMove> attackMoves = new ArrayList<>();
     private Map<Region,Integer> extraEffort = new HashMap<>();
+    private int roundNum = 0;
 
 
     @Override
@@ -81,6 +82,7 @@ public class BotStarter implements Bot {
      * @return The list of PlaceArmiesMoves for one round
      */
     public List<PlaceArmiesMove> getPlaceArmiesMoves(BotState state, Long timeOut) {
+        log.info("Round %d started", ++roundNum);
         List<PlaceArmiesMove> placeArmiesMoves = new ArrayList<>();
 
         try {
@@ -92,6 +94,7 @@ public class BotStarter implements Bot {
             logExtraEffort();
             attackMoves = new ArrayList<>();
             String myName = state.getMyPlayerName();
+            String enemyName = state.getOpponentPlayerName();
             int armiesLeft = state.getStartingArmies();
 
             for(Region attackRegion : attackRegions) {
@@ -134,7 +137,7 @@ public class BotStarter implements Bot {
                         .collect(Collectors.toList());
 
                 List<Region> enemyBorderRegions = borderRegions.stream()
-                        .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByEnemyOfPlayer(myName)))
+                        .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(enemyName)))
                         .collect(Collectors.toList());
 
                 if(enemyBorderRegions.size() > 0) {
@@ -197,6 +200,7 @@ public class BotStarter implements Bot {
         attackTransferMoves.addAll(attackMoves);
         attackTransferMoves.addAll(transferMoves);
 
+        log.info("Round %d done", roundNum);
         return attackTransferMoves;
     }
 

@@ -65,10 +65,6 @@ public class Region {
         return playerName.equals(this.playerName);
     }
 
-    public boolean ownedByEnemyOfPlayer(String playerName) {
-        return !playerName.equals(this.playerName) && !playerName.equals("neutral");
-    }
-
     /**
      * @param armies Sets the number of armies that are on this Region
      */

@@ -162,6 +162,9 @@ public class BotStarter implements Bot {
             r.setArmies(r.getArmies() + armiesToRecruit);
             armiesLeft -= armiesToRecruit;
             log.info("Placing extra remaining armies " + move);
+            if(armiesLeft == 0) {
+                break;
+            }
         }
 
         return moves;

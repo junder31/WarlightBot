@@ -36,7 +36,7 @@ public class TroopMovePlanner {
                 .collect(Collectors.toList());
         List<AttackTransferMove> transferMoves = new ArrayList<>();
 
-        if(sourceTransferRegions.size() > 0) {
+        if (sourceTransferRegions.size() > 0) {
             Map<Region, Integer> distanceToEnemyMap = getDistanceToEnemyPlayer();
             log.trace("Distance To Enemies: %s", distanceToEnemyMap);
             transferMoves.addAll(getMoves(sourceTransferRegions, distanceToEnemyMap));
@@ -46,8 +46,8 @@ public class TroopMovePlanner {
                     .collect(Collectors.toList()));
         }
 
-        if(sourceTransferRegions.size() > 0) {
-            Map<Region,Integer> distanceToBorderMap = getDistanceToBorder();
+        if (sourceTransferRegions.size() > 0) {
+            Map<Region, Integer> distanceToBorderMap = getDistanceToBorder();
             log.trace("Distance To Border: %s", distanceToBorderMap);
             transferMoves.addAll(getMoves(sourceTransferRegions, distanceToBorderMap));
         }
@@ -55,21 +55,22 @@ public class TroopMovePlanner {
         return transferMoves;
     }
 
-    public List<AttackTransferMove> getMoves(List<Region> sourceRegions, Map<Region,Integer> dMap) {
+    public List<AttackTransferMove> getMoves(List<Region> sourceRegions, Map<Region, Integer> dMap) {
         List<AttackTransferMove> transferMoves = new ArrayList<>();
 
-        for(Region source : sourceRegions) {
+        for (Region source : sourceRegions) {
             List<Region> destinations = source.getNeighbors().stream()
                     .filter(r -> dMap.containsKey(r))
                     .collect(Collectors.toList());
-            if(destinations.size() > 0) {
-                destinations.sort( (r1, r2) -> dMap.get(r1) - dMap.get(r2) );
+            if (destinations.size() > 0) {
+                destinations.sort((r1, r2) -> dMap.get(r1) - dMap.get(r2));
+                log.trace("Destination list: " + destinations);
                 Region dest = destinations.get(0);
-                if(dMap.get(dest) < dMap.get(source)) {
+                if (dMap.get(dest) < dMap.get(source)) {
                     //if some destinations directly border the enemy transfer to dest with most armies
                     int i = 1;
-                    while(dMap.get(dest) == 0  && i < destinations.size() ) {
-                        if(dest.getArmies() < destinations.get(i).getArmies()) {
+                    while (i < destinations.size() && dMap.get(dest) == dMap.get(destinations.get(i))) {
+                        if (dest.getArmies() < destinations.get(i).getArmies()) {
                             dest = destinations.get(i);
                         }
                         i++;
@@ -85,39 +86,39 @@ public class TroopMovePlanner {
         return transferMoves;
     }
 
-    public Map<Region,Integer> getDistanceToEnemyPlayer() {
+    public Map<Region, Integer> getDistanceToEnemyPlayer() {
         return getDistanceMap(n -> n.ownedByPlayer(enemyName));
     }
 
-    public Map<Region,Integer> getDistanceToBorder() {
+    public Map<Region, Integer> getDistanceToBorder() {
         return getDistanceMap(n -> !n.ownedByPlayer(myName));
     }
 
-    public Map<Region,Integer> getDistanceMap(Predicate<Region> regionPredicate) {
+    public Map<Region, Integer> getDistanceMap(Predicate<Region> regionPredicate) {
         List<Region> enemyBorderingRegions = gameBoard.getRegions().stream()
                 .filter(r -> r.ownedByPlayer(myName))
-                .filter( r -> r.getNeighbors().stream().anyMatch(regionPredicate) )
+                .filter(r -> r.getNeighbors().stream().anyMatch(regionPredicate))
                 .collect(Collectors.toList());
-        Map<Region,Integer> dMap = new HashMap<>();
+        Map<Region, Integer> dMap = new HashMap<>();
 
-        for(Region r : enemyBorderingRegions) {
+        for (Region r : enemyBorderingRegions) {
             dMap.put(r, 0);
         }
 
-        for(Region r : enemyBorderingRegions) {
+        for (Region r : enemyBorderingRegions) {
             getDistanceMapHelper(dMap, r);
         }
 
         return dMap;
     }
 
-    private void getDistanceMapHelper(Map<Region,Integer> dMap, Region r) {
+    private void getDistanceMapHelper(Map<Region, Integer> dMap, Region r) {
         List<Region> ownedNeighbors = r.getNeighbors().stream()
-                .filter( n -> n.ownedByPlayer(myName) ).collect(Collectors.toList());
+                .filter(n -> n.ownedByPlayer(myName)).collect(Collectors.toList());
         int rDistance = dMap.get(r);
 
-        for(Region neighbor : ownedNeighbors) {
-            if( !dMap.containsKey(neighbor) || dMap.get(neighbor) > rDistance + 1) {
+        for (Region neighbor : ownedNeighbors) {
+            if (!dMap.containsKey(neighbor) || dMap.get(neighbor) > rDistance + 1) {
                 dMap.put(neighbor, rDistance + 1);
                 getDistanceMapHelper(dMap, neighbor);
             }

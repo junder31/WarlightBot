@@ -72,10 +72,6 @@ public class BotStarter implements Bot {
         }
     }
 
-    private void logExtraEffort() {
-
-    }
-
     @Override
     /**
      * This method is called for at first part of each round. This example puts two armies on random regions
@@ -92,10 +88,8 @@ public class BotStarter implements Bot {
                     .map(r -> r.getToRegion()).collect(Collectors.toList());
 
             updateExtraEffort(attackedRegions, attackRegions);
-            logExtraEffort();
             attackMoves = new ArrayList<>();
             String myName = state.getMyPlayerName();
-            String enemyName = state.getOpponentPlayerName();
             int armiesLeft = state.getStartingArmies();
 
             for (Region attackRegion : attackRegions) {

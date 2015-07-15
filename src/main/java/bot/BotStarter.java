@@ -174,7 +174,7 @@ public class BotStarter implements Bot {
                         .filter(r -> myRegion.getNeighbors().contains(r))
                         .sorted( regionMostArmySort ).findFirst().orElse(null);
                 if(threateningRegion != null) {
-                    int neededToDefend = (int)Math.ceil(threateningRegion.getArmies() / 1.5);
+                    int neededToDefend = (int)Math.ceil(threateningRegion.getArmies() / 1.3);
                     if(threateningRegion.getArmies() > neededToDefend) {
                         int amountToRecruit = neededToDefend - myRegion.getArmies();
                         if(amountToRecruit <= armiesLeft) {

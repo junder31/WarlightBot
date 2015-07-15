@@ -157,10 +157,10 @@ public class BotStarter implements Bot {
         List<SuperRegion> enemyContainingSuperRegions = state.getVisibleGameBoard().getSuperRegions().stream()
                 .filter(sr -> sr.getSubRegions().stream().anyMatch(r -> r.ownedByPlayer(enemyName)))
                 //Get rid of SRs where at least one of my regions cannot be reached this turn
-                .filter(sr -> sr.getSubRegions().stream()
+                .filter(sr -> !sr.getSubRegions().stream()
                         .filter(r -> r.ownedByPlayer(myName))
-                        .allMatch(r -> !r.getNeighbors().stream().anyMatch(n -> n.ownedByPlayer(enemyName))))
-                .sorted((sr1, sr2) -> sr2.getArmiesReward() - sr1.getArmiesReward() )
+                        .anyMatch(r -> r.getNeighbors().stream().allMatch(n -> !n.ownedByPlayer(enemyName))))
+                .sorted((sr1, sr2) -> sr2.getArmiesReward() - sr1.getArmiesReward())
                 .collect(Collectors.toList());
 
         log.debug("Making defensive plan for Enemy Containing Super Regions: %s", enemyContainingSuperRegions);
@@ -174,13 +174,15 @@ public class BotStarter implements Bot {
                         .filter(r -> myRegion.getNeighbors().contains(r))
                         .sorted( regionMostArmySort ).findFirst().orElse(null);
                 if(threateningRegion != null) {
-                    if(threateningRegion.getArmies() > 1.2 * myRegion.getArmies()) {
-                        int amountToRecruit = (int)Math.ceil(threateningRegion.getArmies() / 1.2 - myRegion.getArmies());
+                    int neededToDefend = (int)Math.ceil(threateningRegion.getArmies() / 1.5);
+                    if(threateningRegion.getArmies() > neededToDefend) {
+                        int amountToRecruit = neededToDefend - myRegion.getArmies();
                         if(amountToRecruit <= armiesLeft) {
                             PlaceArmiesMove move = new PlaceArmiesMove(myName, myRegion, amountToRecruit);
                             armiesLeft -= amountToRecruit;
                             log.info("Recruiting For Defense: %s", move);
                             moves.add(move);
+                            myRegion.setArmies(myRegion.getArmies() - neededToDefend);
                         } else {
                             log.info("Insufficient armies to Defend: %s, Required %d, Available: %d",
                                     myRegion, amountToRecruit, armiesLeft);
@@ -206,7 +208,7 @@ public class BotStarter implements Bot {
                         log.warn("Did not find any neighboring owned region to: %s, neighbors: %s",
                                 weakEnemy, weakEnemy.getNeighbors());
                     } else {
-                        int armiesNeeded = (int)Math.ceil(1.7 * weakEnemy.getArmies());
+                        int armiesNeeded = (int)Math.ceil(2.0 * weakEnemy.getArmies());
                         if(strongNeighbor.getArmies() < armiesNeeded) {
                             int amountToRecruit = armiesNeeded - strongNeighbor.getArmies();
                             if(amountToRecruit <= armiesLeft) {

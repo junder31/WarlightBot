@@ -89,6 +89,7 @@ public class BotStarter implements Bot {
 
             updateExtraEffort(attackedRegions, attackRegions);
             attackMoves = new ArrayList<>();
+            armiesLeft = state.getStartingArmies();
 
             List<Move> defensiveMoves = getDefenseMoves(state);
             List<AttackTransferMove> defensiveAttacks = new ArrayList<>();
@@ -105,7 +106,6 @@ public class BotStarter implements Bot {
                     .map(AttackTransferMove::getToRegion).collect(Collectors.toList()));
 
             String myName = state.getMyPlayerName();
-            armiesLeft = state.getStartingArmies();
 
             for (Region attackRegion : attackRegions) {
                 log.debug("Selected best region to attack " + attackRegion);
@@ -158,11 +158,12 @@ public class BotStarter implements Bot {
                 .filter(sr -> sr.getSubRegions().stream().anyMatch(r -> r.ownedByPlayer(enemyName)))
                 //Get rid of SRs where at least one of my regions cannot be reached this turn
                 .filter(sr -> sr.getSubRegions().stream()
+                        .filter(r -> r.ownedByPlayer(myName))
                         .allMatch(r -> !r.getNeighbors().stream().anyMatch(n -> n.ownedByPlayer(enemyName))))
-                .sorted( (sr1, sr2) -> sr2.getArmiesReward() - sr1.getArmiesReward() )
+                .sorted((sr1, sr2) -> sr2.getArmiesReward() - sr1.getArmiesReward() )
                 .collect(Collectors.toList());
 
-        log.debug("Making defensive plan for Enemy Containing Super Regions: %d", enemyContainingSuperRegions);
+        log.debug("Making defensive plan for Enemy Containing Super Regions: %s", enemyContainingSuperRegions);
 
         for(SuperRegion sr : enemyContainingSuperRegions) {
             Region myRegion = sr.getSubRegions().stream().filter(r -> r.ownedByPlayer(myName))
@@ -186,7 +187,7 @@ public class BotStarter implements Bot {
                         }
                     }
                 } else {
-                    log.warn("Did not find threatening enemy in SR: %s\nsubRegions:", sr, sr.getSubRegions());
+                    log.warn("Did not find threatening enemy in SR: %s\nsubRegions: %s", sr, sr.getSubRegions());
                 }
             } else {
                 Region weakEnemy = sr.getSubRegions().stream()
@@ -196,18 +197,18 @@ public class BotStarter implements Bot {
                         .findFirst().orElse(null);
 
                 if(weakEnemy == null) {
-                    log.warn("Did not find threatening enemy in SR: %s\nsubRegions:", sr, sr.getSubRegions());
+                    log.warn("Did not find threatening enemy in SR: %s\nsubRegions: %s", sr, sr.getSubRegions());
                 } else {
                     Region strongNeighbor = weakEnemy.getNeighbors().stream()
                             .filter(r -> r.ownedByPlayer(myName))
                             .sorted( regionMostArmySort ).findFirst().orElse(null);
-                    if(strongNeighbor != null) {
-                        log.warn("Did not find any neighbording owned region to: %s, neighbors:",
+                    if(strongNeighbor == null) {
+                        log.warn("Did not find any neighboring owned region to: %s, neighbors: %s",
                                 weakEnemy, weakEnemy.getNeighbors());
                     } else {
                         int armiesNeeded = (int)Math.ceil(1.7 * weakEnemy.getArmies());
                         if(strongNeighbor.getArmies() < armiesNeeded) {
-                            int amountToRecruit = armiesNeeded - myRegion.getArmies();
+                            int amountToRecruit = armiesNeeded - strongNeighbor.getArmies();
                             if(amountToRecruit <= armiesLeft) {
                                 PlaceArmiesMove move = new PlaceArmiesMove(myName, strongNeighbor, amountToRecruit);
                                 log.info("Recruiting for Defensive Attack on Region: %s Move: %s", weakEnemy, move);

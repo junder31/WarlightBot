@@ -35,21 +35,11 @@ public class AttackSuperRegionRanker {
             } else if (sr2.getArmiesReward() == 0 ) {
                 return -1;
             } else {
-                if(sr1.getSubRegions().stream().anyMatch(r -> r.ownedByPlayer(enemyName))) {
-                    if(sr2.getSubRegions().stream().anyMatch(r -> r.ownedByPlayer(enemyName))) {
-                        return 0;
-                    } else {
-                        return 1;
-                    }
-                } else if (sr2.getSubRegions().stream().anyMatch(r -> r.ownedByPlayer(enemyName))) {
-                    return -1;
+                int armiesToTakeDif = getEnemyArmiesInSuperRegion(sr1) - getEnemyArmiesInSuperRegion(sr2);
+                if( armiesToTakeDif == 0 ) {
+                    return sr2.getArmiesReward() - sr1.getArmiesReward();
                 } else {
-                    int armiesToTakeDif = getEnemyArmiesInSuperRegion(sr1) - getEnemyArmiesInSuperRegion(sr2);
-                    if( armiesToTakeDif == 0 ) {
-                        return sr2.getArmiesReward() - sr1.getArmiesReward();
-                    } else {
-                        return armiesToTakeDif;
-                    }
+                    return armiesToTakeDif;
                 }
             }
         } );

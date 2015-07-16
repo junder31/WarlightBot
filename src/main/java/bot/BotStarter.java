@@ -30,25 +30,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
-    private Map<Integer,Integer> defenseLookup;
-    private Map<Integer,Integer> attackLookup;
+    private Map<Integer, Integer> defenseLookup;
+    private Map<Integer, Integer> attackLookup;
     private static Logger log = new Logger(BotStarter.class.getSimpleName());
     private List<AttackTransferMove> attackMoves = new ArrayList<>();
-    private Map<Region, Integer> extraEffort = new HashMap<>();
     private int roundNum = 0;
     private int armiesLeft = 0;
 
     public BotStarter() {
         defenseLookup = new HashMap<>();
         attackLookup = new HashMap<>();
-        for(int i = 0; i < 1000; i++) {
-            int worstCaseAttack = (int) Math.round( ((i * Settings.DEFENSE_KILL_RATE) * (1 - Settings.LUCK_FACTOR)) );
+        for (int i = 0; i < 1000; i++) {
+            int worstCaseAttack = (int) Math.round(((i * Settings.DEFENSE_KILL_RATE) * (1 - Settings.LUCK_FACTOR)));
             defenseLookup.put(i, worstCaseAttack);
         }
 
-        for(int key : defenseLookup.keySet()) {
+        for (int key : defenseLookup.keySet()) {
             int value = defenseLookup.get(key);
-            if(!attackLookup.containsKey(value) || attackLookup.get(value) > key) {
+            if (!attackLookup.containsKey(value) || attackLookup.get(value) > key) {
                 attackLookup.put(value, key);
             }
         }
@@ -77,17 +76,6 @@ public class BotStarter implements Bot {
         return selectedRegion != null ? selectedRegion : state.getPickableStartingRegions().stream().findAny().get();
     }
 
-    private void updateExtraEffort(List<Region> regionsAttackedLastTurn, List<Region> regionsToAttackThisTurn) {
-        for (Region region : regionsToAttackThisTurn) {
-            if (regionsToAttackThisTurn.contains(region) && regionsAttackedLastTurn.contains(region)) {
-                extraEffort.put(region, extraEffort.get(region) + Settings.EXTRA_EFFORT_FACTOR);
-                log.debug("Set extra effort %s to %d", region, extraEffort.get(region));
-            } else {
-                extraEffort.put(region, 0);
-            }
-        }
-    }
-
     @Override
     /**
      * This method is called for at first part of each round. This example puts two armies on random regions
@@ -103,19 +91,24 @@ public class BotStarter implements Bot {
             List<Region> attackedRegions = attackMoves.stream()
                     .map(r -> r.getToRegion()).collect(Collectors.toList());
 
-            updateExtraEffort(attackedRegions, attackRegions);
+            //updateExtraEffort(attackedRegions, attackRegions);
             attackMoves = new ArrayList<>();
             armiesLeft = state.getStartingArmies();
 
-            if(roundNum >= 2) {
-                placeArmiesMoves.addAll(getDefenseMoves(state));
+            if (roundNum >= 2) {
+                int armiesForDefense = (int) (armiesLeft * Settings.DEFENSE_ALLOTMENT);
+                List<PlaceArmiesMove> defenseMoves = getDefenseMoves(state, armiesForDefense);
+                for (PlaceArmiesMove move : defenseMoves) {
+                    placeArmiesMoves.add(move);
+                    armiesLeft -= move.getArmies();
+                }
             }
 
             String myName = state.getMyPlayerName();
 
             for (Region attackRegion : attackRegions) {
                 log.debug("Selected best region to attack " + attackRegion);
-                int requiredArmies = attackLookup.get(attackRegion.getArmies()) + extraEffort.get(attackRegion);
+                int requiredArmies = attackLookup.get(attackRegion.getArmies());
                 log.debug("Armies required to attack %d", requiredArmies);
                 List<Region> neighbors = attackRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
@@ -145,9 +138,9 @@ public class BotStarter implements Bot {
                 placeArmiesMoves.addAll(distributeRemainingArmies(state, armiesLeft));
             }
 
-            for(AttackTransferMove attackMove : attackMoves) {
+            for (AttackTransferMove attackMove : attackMoves) {
                 Region fromRegion = attackMove.getFromRegion();
-                if(fromRegion.getArmies() > 1) {
+                if (fromRegion.getArmies() > 1) {
                     attackMove.setArmies(attackMove.getArmies() + fromRegion.getArmies() - 1);
                     fromRegion.setArmies(1);
                 }
@@ -159,21 +152,21 @@ public class BotStarter implements Bot {
         return placeArmiesMoves;
     }
 
-    private List<PlaceArmiesMove> getDefenseMoves(BotState state) {
+    private List<PlaceArmiesMove> getDefenseMoves(BotState state, int armiesAllocated) {
         List<PlaceArmiesMove> moves = new ArrayList<>();
         List<Region> rankedVulnerableRegions = new VulnerableRegionRanker(state).getRankedVulnerableRegionsList();
 
-        for(Region region : rankedVulnerableRegions) {
+        for (Region region : rankedVulnerableRegions) {
             int threat = region.getNeighbors().stream().mapToInt(Region::getArmies).max().getAsInt();
             int requiredDefense = defenseLookup.get(threat);
-            if(requiredDefense > region.getArmies() && armiesLeft > 0) {
+            if (requiredDefense > region.getArmies() && armiesAllocated > 0) {
                 int armiesToRecruit = requiredDefense - region.getArmies();
-                if (armiesToRecruit > armiesLeft) {
-                    armiesToRecruit = armiesLeft;
+                if (armiesToRecruit > armiesAllocated) {
+                    armiesToRecruit = armiesAllocated;
                 }
                 moves.add(new PlaceArmiesMove(state.getMyPlayerName(), region, armiesToRecruit));
-                region.setArmies(1);
-                armiesLeft -= armiesToRecruit;
+                armiesAllocated -= armiesToRecruit;
+                region.setArmies(region.getArmies() + armiesToRecruit);
                 log.info("Recruiting %d armies in %s for defense", armiesToRecruit, region);
             }
         }

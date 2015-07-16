@@ -4,6 +4,7 @@ import bot.AttackListRanker;
 import bot.AttackSuperRegionRanker;
 import bot.BotStarter;
 import bot.TroopMovePlanner;
+import bot.VulnerableRegionRanker;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,10 +18,11 @@ public class LogConfig {
     private Map<String,LogLevel> loggerLevels = new HashMap<>();
 
     private LogConfig() {
-        loggerLevels.put(BotStarter.class.getSimpleName(), LogLevel.DEBUG);
+        //loggerLevels.put(BotStarter.class.getSimpleName(), LogLevel.DEBUG);
         //loggerLevels.put(AttackSuperRegionRanker.class.getSimpleName(), LogLevel.DEBUG);
         loggerLevels.put(AttackListRanker.class.getSimpleName(), LogLevel.DEBUG);
         //loggerLevels.put(TroopMovePlanner.class.getSimpleName(), LogLevel.TRACE);
+        loggerLevels.put(VulnerableRegionRanker.class.getSimpleName(), LogLevel.DEBUG);
     }
 
     public static synchronized LogConfig getInstance() {

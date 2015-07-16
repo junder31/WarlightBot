@@ -31,6 +31,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
+    private Map<Integer,Integer> defenseLookup;
+    private Map<Integer,Integer> attackLookup;
     private static Logger log = new Logger(BotStarter.class.getSimpleName());
     private List<AttackTransferMove> attackMoves = new ArrayList<>();
     private Map<Region, Integer> extraEffort = new HashMap<>();
@@ -39,6 +41,23 @@ public class BotStarter implements Bot {
 
     private Comparator<Region> regionLeastArmySort = (r1, r2) -> r1.getArmies() - r2.getArmies();
     private Comparator<Region> regionMostArmySort = (r1, r2) -> r2.getArmies() - r1.getArmies();
+
+    public BotStarter() {
+        defenseLookup = new HashMap<>();
+        attackLookup = new HashMap<>();
+        for(int i = 0; i < 1000; i++) {
+            int worstCaseAttack = (int) Math.round( ((i * Settings.DEFENSE_KILL_RATE) * (1 - Settings.LUCK_FACTOR)) );
+            defenseLookup.put(i, worstCaseAttack);
+        }
+
+        for(int key : defenseLookup.keySet()) {
+            int value = defenseLookup.get(key);
+            if(!attackLookup.containsKey(value) || attackLookup.get(value) > key) {
+                attackLookup.put(value, key);
+            }
+        }
+        attackLookup.put(1, 2);
+    }
 
     /**
      * A method that returns which region the bot would like to start on, the pickable regions are stored in the BotState.
@@ -110,12 +129,7 @@ public class BotStarter implements Bot {
 
             for (Region attackRegion : attackRegions) {
                 log.debug("Selected best region to attack " + attackRegion);
-                int requiredArmies;
-                if (attackRegion.getArmies() < 6) {
-                    requiredArmies = (int) Math.ceil(attackRegion.getArmies() * 1.5) + extraEffort.get(attackRegion);
-                } else {
-                    requiredArmies = (int) Math.floor(attackRegion.getArmies() * 1.7) + extraEffort.get(attackRegion);
-                }
+                int requiredArmies = attackLookup.get(attackRegion.getArmies()) + extraEffort.get(attackRegion);
                 log.debug("Armies required to attack %d", requiredArmies);
                 List<Region> neighbors = attackRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
@@ -123,7 +137,7 @@ public class BotStarter implements Bot {
                 Region sourceRegion = neighbors.get(0);
 
                 if (armiesLeft > 0 && sourceRegion.getArmies() <= requiredArmies) {
-                    int armiesToRecruit = requiredArmies - sourceRegion.getArmies() + 1;
+                    int armiesToRecruit = (requiredArmies - sourceRegion.getArmies()) + 1;
                     if (armiesToRecruit > armiesLeft) {
                         armiesToRecruit = armiesLeft;
                     }
@@ -144,6 +158,14 @@ public class BotStarter implements Bot {
                 log.warn("No region to recruit for found.");
                 placeArmiesMoves.addAll(distributeRemainingArmies(state, armiesLeft));
             }
+
+            for(AttackTransferMove attackMove : attackMoves) {
+                Region fromRegion = attackMove.getFromRegion();
+                if(fromRegion.getArmies() > 1) {
+                    attackMove.setArmies(attackMove.getArmies() + fromRegion.getArmies() - 1);
+                    fromRegion.setArmies(1);
+                }
+            }
         } catch (Exception ex) {
             log.error("Exception while generating place army moves.", ex);
         }
@@ -152,8 +174,6 @@ public class BotStarter implements Bot {
     }
 
     private List<Move> getDefenseMoves(BotState state) {
-        boolean attackScheduled = false;
-        boolean defenseScheduled = false;
         List<Move> moves = new ArrayList<>();
         String enemyName = state.getOpponentPlayerName();
         String myName = state.getMyPlayerName();
@@ -171,22 +191,21 @@ public class BotStarter implements Bot {
         for (SuperRegion sr : enemyContainingSuperRegions) {
             Region myRegion = sr.getSubRegions().stream().filter(r -> r.ownedByPlayer(myName))
                     .sorted(regionMostArmySort).findFirst().orElse(null);
-            if (myRegion != null && !defenseScheduled) {
+            if (myRegion != null) {
                 Region threateningRegion = sr.getSubRegions().stream()
                         .filter(r -> r.ownedByPlayer(enemyName))
                         .filter(r -> myRegion.getNeighbors().contains(r))
                         .sorted(regionMostArmySort).findFirst().orElse(null);
                 if (threateningRegion != null) {
-                    int neededToDefend = (int) Math.ceil(threateningRegion.getArmies() * Settings.DEFENSIVE_HOLD_FACTOR);
+                    int neededToDefend = defenseLookup.get(threateningRegion.getArmies()) + Settings.DEFENSIVE_HOLD_FACTOR;
                     if (threateningRegion.getArmies() > neededToDefend) {
                         int amountToRecruit = neededToDefend - myRegion.getArmies();
-                        if (amountToRecruit <= armiesLeft) {
+                        if (amountToRecruit > 0 && amountToRecruit <= armiesLeft) {
                             PlaceArmiesMove move = new PlaceArmiesMove(myName, myRegion, amountToRecruit);
                             armiesLeft -= amountToRecruit;
                             log.info("Recruiting For Defense: %s", move);
                             moves.add(move);
                             myRegion.setArmies(myRegion.getArmies() - neededToDefend);
-                            defenseScheduled = true;
                         } else {
                             log.info("Insufficient armies to Defend: %s, Required %d, Available: %d",
                                     myRegion, amountToRecruit, armiesLeft);
@@ -195,7 +214,7 @@ public class BotStarter implements Bot {
                 } else {
                     log.warn("Did not find threatening enemy in SR: %s\nsubRegions: %s", sr, sr.getSubRegions());
                 }
-            } else if(!attackScheduled) {
+            } else {
                 Region weakEnemy = sr.getSubRegions().stream()
                         .filter(r -> r.ownedByPlayer(enemyName) &&
                                 r.getNeighbors().stream().anyMatch(n -> n.ownedByPlayer(myName)))
@@ -212,7 +231,8 @@ public class BotStarter implements Bot {
                         log.warn("Did not find any neighboring owned region to: %s, neighbors: %s",
                                 weakEnemy, weakEnemy.getNeighbors());
                     } else {
-                        int armiesNeeded = (int) Math.ceil(Settings.DEFENSIVE_ATTACK_FACTOR * weakEnemy.getArmies());
+                        int armiesNeeded = attackLookup.get(weakEnemy.getArmies()) + Settings.DEFENSIVE_ATTACK_FACTOR
+                                + extraEffort.get(weakEnemy);
                         if (strongNeighbor.getArmies() < armiesNeeded) {
                             int amountToRecruit = armiesNeeded - strongNeighbor.getArmies();
                             if (amountToRecruit <= armiesLeft) {
@@ -233,7 +253,6 @@ public class BotStarter implements Bot {
                             log.info("Launching defensive attack: %s", move);
                             moves.add(move);
                             strongNeighbor.setArmies(strongNeighbor.getArmies() - armiesNeeded);
-                            attackScheduled = true;
                         }
                     }
                 }

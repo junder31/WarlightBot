@@ -24,7 +24,6 @@ import log.Logger;
 import map.Region;
 import map.SuperRegion;
 import move.AttackTransferMove;
-import move.Move;
 import move.PlaceArmiesMove;
 
 import java.util.*;
@@ -38,9 +37,6 @@ public class BotStarter implements Bot {
     private Map<Region, Integer> extraEffort = new HashMap<>();
     private int roundNum = 0;
     private int armiesLeft = 0;
-
-    private Comparator<Region> regionLeastArmySort = (r1, r2) -> r1.getArmies() - r2.getArmies();
-    private Comparator<Region> regionMostArmySort = (r1, r2) -> r2.getArmies() - r1.getArmies();
 
     public BotStarter() {
         defenseLookup = new HashMap<>();
@@ -111,19 +107,9 @@ public class BotStarter implements Bot {
             attackMoves = new ArrayList<>();
             armiesLeft = state.getStartingArmies();
 
-            List<Move> defensiveMoves = getDefenseMoves(state);
-            List<AttackTransferMove> defensiveAttacks = new ArrayList<>();
-            for (Move move : defensiveMoves) {
-                if (move instanceof PlaceArmiesMove) {
-                    placeArmiesMoves.add((PlaceArmiesMove) move);
-                } else if (move instanceof AttackTransferMove) {
-                    defensiveAttacks.add((AttackTransferMove) move);
-                }
+            if(roundNum >= 2) {
+                placeArmiesMoves.addAll(getDefenseMoves(state));
             }
-
-            attackMoves.addAll(defensiveAttacks);
-            attackedRegions.removeAll(defensiveAttacks.stream()
-                    .map(AttackTransferMove::getToRegion).collect(Collectors.toList()));
 
             String myName = state.getMyPlayerName();
 
@@ -173,92 +159,24 @@ public class BotStarter implements Bot {
         return placeArmiesMoves;
     }
 
-    private List<Move> getDefenseMoves(BotState state) {
-        List<Move> moves = new ArrayList<>();
-        String enemyName = state.getOpponentPlayerName();
-        String myName = state.getMyPlayerName();
-        List<SuperRegion> enemyContainingSuperRegions = state.getVisibleGameBoard().getSuperRegions().stream()
-                .filter(sr -> sr.getSubRegions().stream().anyMatch(r -> r.ownedByPlayer(enemyName)))
-                        //Get rid of SRs where at least one of my regions cannot be reached this turn
-                .filter(sr -> !sr.getSubRegions().stream()
-                        .filter(r -> r.ownedByPlayer(myName))
-                        .anyMatch(r -> r.getNeighbors().stream().allMatch(n -> !n.ownedByPlayer(enemyName))))
-                .sorted((sr1, sr2) -> sr2.getArmiesReward() - sr1.getArmiesReward())
-                .collect(Collectors.toList());
+    private List<PlaceArmiesMove> getDefenseMoves(BotState state) {
+        List<PlaceArmiesMove> moves = new ArrayList<>();
+        List<Region> rankedVulnerableRegions = new VulnerableRegionRanker(state).getRankedVulnerableRegionsList();
 
-        log.debug("Making defensive plan for Enemy Containing Super Regions: %s", enemyContainingSuperRegions);
-
-        for (SuperRegion sr : enemyContainingSuperRegions) {
-            Region myRegion = sr.getSubRegions().stream().filter(r -> r.ownedByPlayer(myName))
-                    .sorted(regionMostArmySort).findFirst().orElse(null);
-            if (myRegion != null) {
-                Region threateningRegion = sr.getSubRegions().stream()
-                        .filter(r -> r.ownedByPlayer(enemyName))
-                        .filter(r -> myRegion.getNeighbors().contains(r))
-                        .sorted(regionMostArmySort).findFirst().orElse(null);
-                if (threateningRegion != null) {
-                    int neededToDefend = defenseLookup.get(threateningRegion.getArmies()) + Settings.DEFENSIVE_HOLD_FACTOR;
-                    if (threateningRegion.getArmies() > neededToDefend) {
-                        int amountToRecruit = neededToDefend - myRegion.getArmies();
-                        if (amountToRecruit > 0 && amountToRecruit <= armiesLeft) {
-                            PlaceArmiesMove move = new PlaceArmiesMove(myName, myRegion, amountToRecruit);
-                            armiesLeft -= amountToRecruit;
-                            log.info("Recruiting For Defense: %s", move);
-                            moves.add(move);
-                            myRegion.setArmies(myRegion.getArmies() - neededToDefend);
-                        } else {
-                            log.info("Insufficient armies to Defend: %s, Required %d, Available: %d",
-                                    myRegion, amountToRecruit, armiesLeft);
-                        }
-                    }
-                } else {
-                    log.warn("Did not find threatening enemy in SR: %s\nsubRegions: %s", sr, sr.getSubRegions());
+        for(Region region : rankedVulnerableRegions) {
+            int threat = region.getNeighbors().stream().mapToInt(Region::getArmies).max().getAsInt();
+            int requiredDefense = defenseLookup.get(threat);
+            if(requiredDefense > region.getArmies() && armiesLeft > 0) {
+                int armiesToRecruit = requiredDefense - region.getArmies();
+                if (armiesToRecruit > armiesLeft) {
+                    armiesToRecruit = armiesLeft;
                 }
-            } else {
-                Region weakEnemy = sr.getSubRegions().stream()
-                        .filter(r -> r.ownedByPlayer(enemyName) &&
-                                r.getNeighbors().stream().anyMatch(n -> n.ownedByPlayer(myName)))
-                        .sorted(regionLeastArmySort)
-                        .findFirst().orElse(null);
-
-                if (weakEnemy == null) {
-                    log.warn("Did not find threatening enemy in SR: %s\nsubRegions: %s", sr, sr.getSubRegions());
-                } else {
-                    Region strongNeighbor = weakEnemy.getNeighbors().stream()
-                            .filter(r -> r.ownedByPlayer(myName))
-                            .sorted(regionMostArmySort).findFirst().orElse(null);
-                    if (strongNeighbor == null) {
-                        log.warn("Did not find any neighboring owned region to: %s, neighbors: %s",
-                                weakEnemy, weakEnemy.getNeighbors());
-                    } else {
-                        int armiesNeeded = attackLookup.get(weakEnemy.getArmies()) + Settings.DEFENSIVE_ATTACK_FACTOR
-                                + extraEffort.get(weakEnemy);
-                        if (strongNeighbor.getArmies() < armiesNeeded) {
-                            int amountToRecruit = armiesNeeded - strongNeighbor.getArmies();
-                            if (amountToRecruit <= armiesLeft) {
-                                PlaceArmiesMove move = new PlaceArmiesMove(myName, strongNeighbor, amountToRecruit);
-                                log.info("Recruiting for Defensive Attack on Region: %s Move: %s", weakEnemy, move);
-                                armiesLeft -= amountToRecruit;
-                                strongNeighbor.setArmies(strongNeighbor.getArmies() + amountToRecruit);
-                                moves.add(move);
-                            } else {
-                                log.info("Insufficient armies for Defensive Attack: %s, Required %d, Available: %d",
-                                        weakEnemy, amountToRecruit, armiesLeft);
-                            }
-                        }
-
-                        if (strongNeighbor.getArmies() >= armiesNeeded) {
-                            AttackTransferMove move = new AttackTransferMove(myName,
-                                    strongNeighbor, weakEnemy, armiesNeeded);
-                            log.info("Launching defensive attack: %s", move);
-                            moves.add(move);
-                            strongNeighbor.setArmies(strongNeighbor.getArmies() - armiesNeeded);
-                        }
-                    }
-                }
+                moves.add(new PlaceArmiesMove(state.getMyPlayerName(), region, armiesToRecruit));
+                region.setArmies(1);
+                armiesLeft -= armiesToRecruit;
+                log.info("Recruiting %d armies in %s for defense", armiesToRecruit, region);
             }
         }
-
         return moves;
     }
 

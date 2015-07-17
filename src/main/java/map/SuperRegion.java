@@ -10,24 +10,61 @@
 
 package map;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SuperRegion {
 
     private int id;
     private int armiesReward;
     private LinkedList<Region> subRegions;
+    private Set<Set<Region>> minDominatorSets;
 
     public SuperRegion(int id, int armiesReward) {
         this.id = id;
         this.armiesReward = armiesReward;
-        subRegions = new LinkedList<Region>();
+        subRegions = new LinkedList<>();
     }
 
     public void addSubRegion(Region subRegion) {
-        if (!subRegions.contains(subRegion))
+        if (!subRegions.contains(subRegion)) {
             subRegions.add(subRegion);
+        }
+    }
+
+    public Set<Set<Region>> getMinDominatorSets() {
+        if(minDominatorSets == null) {
+            List<Set<Region>> dominatorSets = findDominatorSetHelper(
+                    new HashSet<>(), new HashSet<>(), new HashSet<>(subRegions));
+            int minSize = dominatorSets.stream().mapToInt(Set::size).min().orElse(0);
+            minDominatorSets = dominatorSets.stream().filter( s -> s.size() == minSize).collect(Collectors.toSet());
+        }
+        return minDominatorSets;
+    }
+
+    private List<Set<Region>> findDominatorSetHelper(Set<Region> dominatorSet,
+                                                  Set<Region> dominatedRegions,
+                                                  Set<Region> remainingRegions) {
+        List<Set<Region>> workDominatorSets = new ArrayList<>();
+
+        Set<Region> newRemainingRegions = new HashSet<>(remainingRegions);
+        for(Region region: remainingRegions) {
+            Set<Region> newDominatorSet = new HashSet<>(dominatorSet);
+            newDominatorSet.add(region);
+            Set<Region> newDominatedRegions = new HashSet<>(dominatedRegions);
+            newDominatedRegions.add(region);
+            newDominatedRegions.addAll(region.getNeighbors());
+            newRemainingRegions.remove(region);
+
+            if( newDominatedRegions.containsAll(subRegions) ) {
+                workDominatorSets.add(newDominatorSet);
+            } else {
+                workDominatorSets.addAll(findDominatorSetHelper(newDominatorSet,
+                        newDominatedRegions, newRemainingRegions));
+            }
+        }
+
+        return workDominatorSets;
     }
 
     /**

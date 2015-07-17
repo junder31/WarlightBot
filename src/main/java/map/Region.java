@@ -10,8 +10,10 @@
 
 package map;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Set;
 
 
 public class Region {
@@ -47,6 +49,26 @@ public class Region {
             neighbors.add(neighbor);
             neighbor.addNeighbor(this);
         }
+    }
+
+    public int distanceTo(Region otherRegion) {
+        int distance = 1;
+        Set<Region> visited = new HashSet<>();
+        Set<Region> neighbors = new HashSet<>();
+
+        visited.add(this);
+        neighbors.addAll(this.getNeighbors());
+
+        while( !neighbors.contains(otherRegion) ) {
+            Set<Region> newNeighbors = new HashSet<>();
+            for(Region region : neighbors) {
+                newNeighbors.addAll(region.getNeighbors());
+            }
+            visited.addAll(neighbors);
+            neighbors = newNeighbors;
+            distance++;
+        }
+        return distance;
     }
 
     /**

@@ -88,21 +88,8 @@ public class BotStarter implements Bot {
 
         try {
             List<Region> attackRegions = new AttackListRanker(state).getRankedAttackList();
-            List<Region> attackedRegions = attackMoves.stream()
-                    .map(r -> r.getToRegion()).collect(Collectors.toList());
-
-            //updateExtraEffort(attackedRegions, attackRegions);
             attackMoves = new ArrayList<>();
             armiesLeft = state.getStartingArmies();
-
-            if (roundNum >= 2) {
-                int armiesForDefense = (int) (armiesLeft * Settings.DEFENSE_ALLOTMENT);
-                List<PlaceArmiesMove> defenseMoves = getDefenseMoves(state, armiesForDefense);
-                for (PlaceArmiesMove move : defenseMoves) {
-                    placeArmiesMoves.add(move);
-                    armiesLeft -= move.getArmies();
-                }
-            }
 
             String myName = state.getMyPlayerName();
 
@@ -152,27 +139,6 @@ public class BotStarter implements Bot {
         return placeArmiesMoves;
     }
 
-    private List<PlaceArmiesMove> getDefenseMoves(BotState state, int armiesAllocated) {
-        List<PlaceArmiesMove> moves = new ArrayList<>();
-        List<Region> rankedVulnerableRegions = new VulnerableRegionRanker(state).getRankedVulnerableRegionsList();
-
-        for (Region region : rankedVulnerableRegions) {
-            int threat = region.getNeighbors().stream().mapToInt(Region::getArmies).max().getAsInt();
-            int requiredDefense = defenseLookup.get(threat);
-            if (requiredDefense > region.getArmies() && armiesAllocated > 0) {
-                int armiesToRecruit = requiredDefense - region.getArmies();
-                if (armiesToRecruit > armiesAllocated) {
-                    armiesToRecruit = armiesAllocated;
-                }
-                moves.add(new PlaceArmiesMove(state.getMyPlayerName(), region, armiesToRecruit));
-                armiesAllocated -= armiesToRecruit;
-                region.setArmies(region.getArmies() + armiesToRecruit);
-                log.info("Recruiting %d armies in %s for defense", armiesToRecruit, region);
-            }
-        }
-        return moves;
-    }
-
     private List<PlaceArmiesMove> distributeRemainingArmies(BotState state, int armiesLeft) {
         List<PlaceArmiesMove> moves = new ArrayList<>();
 
@@ -182,6 +148,10 @@ public class BotStarter implements Bot {
         log.info("Dividing remaining armies %d between all border regions", armiesLeft);
         int armiesPerRegion = armiesLeft / borderRegions.size();
         int leftOvers = armiesLeft % borderRegions.size();
+        if(armiesPerRegion < 2) {
+            armiesPerRegion = 2;
+            leftOvers = armiesLeft % 2;
+        }
 
         for (Region r : borderRegions) {
             int armiesToRecruit = armiesPerRegion;

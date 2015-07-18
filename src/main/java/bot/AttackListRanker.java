@@ -32,14 +32,9 @@ public class AttackListRanker {
         List<SuperRegion> rankedSuperRegions = new AttackSuperRegionRanker(state).getRankedSuperRegions();
 
         unownedNeighbors.sort((r1, r2) -> {
-            if( isNeutralRegionInEnemySuperRegion(r1) ) {
-                if( isNeutralRegionInEnemySuperRegion(r2) ) {
-                    return rankedSuperRegions.indexOf(r1.getSuperRegion()) -
-                            rankedSuperRegions.indexOf(r2.getSuperRegion());
-                } else {
-                    return 1;
-                }
-            } else if( isNeutralRegionInEnemySuperRegion(r2) ) {
+            if( isNeutralRegionInEnemySuperRegion(r1) && !isNeutralRegionInEnemySuperRegion(r2) ) {
+                return 1;
+            } else if( isNeutralRegionInEnemySuperRegion(r2) && !isNeutralRegionInEnemySuperRegion(r1) ) {
                 return -1;
             } else if(rankedSuperRegions.indexOf(r1.getSuperRegion()) == rankedSuperRegions.indexOf(r2.getSuperRegion()) ) {
                 int weightedR1Armies = r1.ownedByPlayer(enemyName) ?

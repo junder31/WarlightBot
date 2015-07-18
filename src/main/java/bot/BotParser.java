@@ -14,10 +14,14 @@ import map.Region;
 import move.AttackTransferMove;
 import move.PlaceArmiesMove;
 
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.Scanner;
 
 public class BotParser {
+    private final PrintStream out;
+    private final PrintStream err;
 
     final Scanner scan;
 
@@ -25,8 +29,10 @@ public class BotParser {
 
     BotState currentState;
 
-    public BotParser(Bot bot) {
-        this.scan = new Scanner(System.in);
+    public BotParser(InputStream in, PrintStream out, PrintStream err,Bot bot) {
+        this.out = out;
+        this.err = err;
+        this.scan = new Scanner(in);
         this.bot = bot;
         this.currentState = new BotState();
     }
@@ -59,9 +65,9 @@ public class BotParser {
                         output = output.concat(move.toString() + ",");
                 }
                 if (output.length() > 0)
-                    System.out.println(output);
+                    out.println(output);
                 else
-                    System.out.println("No moves");
+                    out.println("No moves");
             } else if (parts[0].equals("settings")) {
                 //update settings
                 currentState.updateSettings(parts[1], parts);
@@ -75,7 +81,7 @@ public class BotParser {
                 //all visible opponent moves are given
                 currentState.readOpponentMoves(parts);
             } else {
-                System.err.printf("Unable to parse line \"%s\"\n", line);
+                err.printf("Unable to parse line \"%s\"\n", line);
             }
         }
     }

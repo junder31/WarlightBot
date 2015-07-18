@@ -22,10 +22,11 @@ package bot;
 
 import log.Logger;
 import map.Region;
-import map.SuperRegion;
 import move.AttackTransferMove;
 import move.PlaceArmiesMove;
 
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -101,7 +102,8 @@ public class BotStarter implements Bot {
 
             for (AttackTransferMove attackMove : attackMoves) {
                 Region fromRegion = attackMove.getFromRegion();
-                if (fromRegion.getArmies() > 1) {
+                Region toRegion = attackMove.getToRegion();
+                if (fromRegion.getArmies() > 1 && toRegion.ownedByPlayer(state.getOpponentPlayerName())) {
                     attackMove.setArmies(attackMove.getArmies() + fromRegion.getArmies() - 1);
                     fromRegion.setArmies(1);
                 }
@@ -178,6 +180,7 @@ public class BotStarter implements Bot {
     public List<AttackTransferMove> getAttackTransferMoves(BotState state, Long timeOut) {
         ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<>();
         attackTransferMoves.addAll(new TroopMovePlanner(state).getTransferMoves());
+        Collections.reverse(attackMoves);
         attackTransferMoves.addAll(attackMoves);
 
         log.info("Round %d done", roundNum);
@@ -186,8 +189,11 @@ public class BotStarter implements Bot {
 
     public static void main(String[] args) {
         log.info("Bot Started");
-        BotParser parser = new BotParser(new BotStarter());
+        BotParser parser = startBot(System.in, System.out, System.err);
         parser.run();
     }
 
+    public static BotParser startBot(InputStream in, PrintStream out, PrintStream err) {
+        return new BotParser(in, out, err, new BotStarter());
+    }
 }

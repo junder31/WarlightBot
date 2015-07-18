@@ -36,27 +36,16 @@ public class TroopMovePlanner {
                 .collect(Collectors.toList());
         List<AttackTransferMove> transferMoves = new ArrayList<>();
 
-        if (sourceTransferRegions.size() > 0) {
-            Map<Region, Integer> distanceToEnemyMap = getDistanceToEnemyPlayer();
-            log.trace("Distance To Enemies: %s", distanceToEnemyMap);
-            transferMoves.addAll(getMoves(sourceTransferRegions, distanceToEnemyMap));
 
-            sourceTransferRegions.removeAll(transferMoves.stream()
-                    .map(AttackTransferMove::getFromRegion)
-                    .collect(Collectors.toList()));
-        }
+        Map<Region, Integer> distanceToBorderMap = getDistanceToBorder();
+        log.trace("Distance To Border: %s", distanceToBorderMap);
+        transferMoves.addAll(getMoves(sourceTransferRegions, distanceToBorderMap));
 
-        if (sourceTransferRegions.size() > 0) {
-            Map<Region, Integer> distanceToBorderMap = getDistanceToBorder();
-            log.trace("Distance To Border: %s", distanceToBorderMap);
-            transferMoves.addAll(getMoves(sourceTransferRegions, distanceToBorderMap));
-        }
-
-        List<Region> borderRegions = gameBoard.getRegions().stream()
-                .filter(r -> r.ownedByPlayer(myName))
-                .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
-                .collect(Collectors.toList());
-
+//        List<Region> borderRegions = gameBoard.getRegions().stream()
+//                .filter(r -> r.ownedByPlayer(myName))
+//                .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
+//                .collect(Collectors.toList());
+//
 //        List<List<Region>> mannedNeighborLists = new ArrayList<>();
 //        for(Region r : borderRegions) {
 //            if(r.getArmies() > 1) {

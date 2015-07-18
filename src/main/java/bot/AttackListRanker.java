@@ -85,7 +85,9 @@ public class AttackListRanker {
     }
 
     public int dominatorScore(Region region) {
-        return (int) region.getSuperRegion().getMinDominatorSets().stream().filter(s -> s.contains(region)).count();
+        int dominatorScore = (int) region.getSuperRegion().getMinDominatorSets().stream().filter(s -> s.contains(region)).count();
+        log.debug("Dominator score for %s : %d", region, dominatorScore);
+        return dominatorScore;
     }
 
     public boolean isNeutralRegionInEnemySuperRegion(Region region) {

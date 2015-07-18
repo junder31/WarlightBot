@@ -94,10 +94,14 @@ public class BotStarter implements Bot {
                     if (armiesToRecruit > armiesLeft) {
                         armiesToRecruit = armiesLeft;
                     }
-                    placeArmiesMoves.add(new PlaceArmiesMove(myName, sourceRegion, armiesToRecruit));
-                    sourceRegion.setArmies(sourceRegion.getArmies() + armiesToRecruit);
-                    armiesLeft -= armiesToRecruit;
-                    log.info("Recruiting %d armies in %s to attack %s", armiesToRecruit, sourceRegion, attackRegion);
+
+                    if(sourceRegion.getArmies() + armiesToRecruit + 1 >= requiredArmies ||
+                            sourceRegion.ownedByPlayer(state.getOpponentPlayerName())) {
+                        placeArmiesMoves.add(new PlaceArmiesMove(myName, sourceRegion, armiesToRecruit));
+                        sourceRegion.setArmies(sourceRegion.getArmies() + armiesToRecruit);
+                        armiesLeft -= armiesToRecruit;
+                        log.info("Recruiting %d armies in %s to attack %s", armiesToRecruit, sourceRegion, attackRegion);
+                    }
                 }
 
                 if (sourceRegion.getArmies() > requiredArmies) {

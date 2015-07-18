@@ -1,3 +1,4 @@
+import bot.AttackLookup
 import bot.BotStarter
 import spock.lang.Specification
 
@@ -43,6 +44,7 @@ class AttackSuperRegionRankerSpec extends Specification {
     void "test something else"() {
         when:
         BotStarter starter = new BotStarter()
+        AttackLookup.getUnitRequiredToAttack(6)
 
         then:
         1 == 1

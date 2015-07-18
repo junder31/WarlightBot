@@ -4,7 +4,7 @@ package bot;
  * Created by johnunderwood on 7/13/15.
  */
 public class Settings {
-    public static final double ENEMY_OWNERSHIP_FACTOR = 0.1;
+    public static final double ENEMY_OWNERSHIP_FACTOR = 0.4;
     public static final int WASTELAND_ARMIES = 6;
     public static final int NORMAL_ARMIES = 2;
     public static final int STARTING_ARMIES_PER_TURN = 5;

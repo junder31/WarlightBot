@@ -19,13 +19,9 @@ public class StartingRegionRanker {
 
     public List<Region> getRankedList() {
         pickableRegions.sort( (r1, r2) -> {
-            if( r1.getSuperRegion().getArmiesReward() == 0 ) {
-                if( r2.getSuperRegion().getArmiesReward() == 0) {
-                    return 0;
-                } else {
-                    return 1;
-                }
-            } else if (r2.getSuperRegion().getArmiesReward() == 0 ) {
+            if( r1.getSuperRegion().getArmiesReward() == 0 && r2.getSuperRegion().getArmiesReward() > 0) {
+                return 1;
+            } else if (r2.getSuperRegion().getArmiesReward() == 0 && r1.getSuperRegion().getArmiesReward() > 0) {
                 return -1;
             } else {
                 int turnsToTakeDiff = getTurnsToTakeSR(r1) - getTurnsToTakeSR(r2);

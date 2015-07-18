@@ -26,13 +26,9 @@ public class AttackSuperRegionRanker {
     public List<SuperRegion> getRankedSuperRegions() {
         List<SuperRegion> superRegions = new ArrayList<>(state.getVisibleGameBoard().getSuperRegions());
         superRegions.sort((sr1, sr2) -> {
-            if( sr1.getArmiesReward() == 0 ) {
-                if( sr2.getArmiesReward() == 0) {
-                    return 0;
-                } else {
-                    return 1;
-                }
-            } else if (sr2.getArmiesReward() == 0 ) {
+            if( sr1.getArmiesReward() == 0 && sr2.getArmiesReward() > 0) {
+                return 1;
+            } else if (sr2.getArmiesReward() == 0 && sr1.getArmiesReward() > 0) {
                 return -1;
             } else {
                 int armiesToTakeDif = getEnemyArmiesInSuperRegion(sr1) - getEnemyArmiesInSuperRegion(sr2);

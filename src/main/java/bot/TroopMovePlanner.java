@@ -52,6 +52,27 @@ public class TroopMovePlanner {
             transferMoves.addAll(getMoves(sourceTransferRegions, distanceToBorderMap));
         }
 
+        List<Region> borderRegions = gameBoard.getRegions().stream()
+                .filter(r -> r.ownedByPlayer(myName))
+                .filter(r -> r.getNeighbors().stream().anyMatch(n -> !n.ownedByPlayer(myName)))
+                .collect(Collectors.toList());
+
+//        List<List<Region>> mannedNeighborLists = new ArrayList<>();
+//        for(Region r : borderRegions) {
+//            if(r.getArmies() > 1) {
+//                List<Region> mannedNeighbors = r.getNeighbors().stream()
+//                        .filter(n -> n.ownedByPlayer(myName) && n.getArmies() > 1)
+//                        .sorted( (r1, r2) -> r2.getArmies() - r1.getArmies())
+//                        .collect(Collectors.toList());
+//                mannedNeighborLists.add(mannedNeighbors);
+//            }
+//        }
+//        mannedNeighborLists.sort( (l1, l2) -> l2.size() - l1.size() );
+//
+//        while ( !mannedNeighborLists.isEmpty() ) {
+//            List<Region> mannedNeighbors
+//        }
+//
         return transferMoves;
     }
 
@@ -77,6 +98,7 @@ public class TroopMovePlanner {
                     }
 
                     AttackTransferMove move = new AttackTransferMove(myName, source, dest, source.getArmies() - 1);
+                    source.setArmies(1);
                     log.info("Moving Troops: %s", move);
                     transferMoves.add(move);
                 }

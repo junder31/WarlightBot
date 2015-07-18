@@ -6,6 +6,7 @@ import map.Region;
 import map.SuperRegion;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import static bot.Settings.*;
 
@@ -51,6 +52,11 @@ public class AttackListRanker {
 
         return unownedNeighbors;
     }
+
+//    public boolean isADominator(Region r) {
+//        Set<Set<Region>> dominatorSets = r.getSuperRegion().getMinDominatorSets();
+//        for(Set<R>)
+//    }
 
     public boolean isNeutralRegionInEnemySuperRegion(Region region) {
         return region.ownedByPlayer("neutral") && region.getSuperRegion().getSubRegions().stream()

@@ -5,6 +5,7 @@ import map.SuperRegion;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import static bot.Settings.*;
 
 /**
@@ -26,19 +27,19 @@ public class AttackSuperRegionRanker {
     public List<SuperRegion> getRankedSuperRegions() {
         List<SuperRegion> superRegions = new ArrayList<>(state.getVisibleGameBoard().getSuperRegions());
         superRegions.sort((sr1, sr2) -> {
-            if( sr1.getArmiesReward() == 0 && sr2.getArmiesReward() > 0) {
+            if (sr1.getArmiesReward() == 0 && sr2.getArmiesReward() > 0) {
                 return 1;
             } else if (sr2.getArmiesReward() == 0 && sr1.getArmiesReward() > 0) {
                 return -1;
             } else {
                 int armiesToTakeDif = getEnemyArmiesInSuperRegion(sr1) - getEnemyArmiesInSuperRegion(sr2);
-                if( armiesToTakeDif == 0 ) {
+                if (armiesToTakeDif == 0) {
                     return sr2.getArmiesReward() - sr1.getArmiesReward();
                 } else {
                     return armiesToTakeDif;
                 }
             }
-        } );
+        });
         log.debug("RankedSuperRegions: %s", superRegions);
         return superRegions;
     }
@@ -51,7 +52,7 @@ public class AttackSuperRegionRanker {
                         return state.getWasteLands().contains(r) ? WASTELAND_ARMIES : NORMAL_ARMIES;
                     } else {
                         return r.ownedByPlayer(enemyName) ?
-                                (int)Math.floor(r.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r.getArmies();
+                                (int) Math.floor(r.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r.getArmies();
                     }
                 }).sum();
         log.trace("Counted %d armies in superRegion %s", superRegionArmyCount, superRegion);

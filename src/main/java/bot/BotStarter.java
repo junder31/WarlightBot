@@ -27,7 +27,9 @@ import move.PlaceArmiesMove;
 
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
@@ -39,6 +41,16 @@ public class BotStarter implements Bot {
 
     public BotStarter() {
 
+    }
+
+    public static void main(String[] args) {
+        log.info("Bot Started");
+        BotParser parser = startBot(System.in, System.out, System.err);
+        parser.run();
+    }
+
+    public static BotParser startBot(InputStream in, PrintStream out, PrintStream err) {
+        return new BotParser(in, out, err, new BotStarter());
     }
 
     /**
@@ -124,7 +136,7 @@ public class BotStarter implements Bot {
         log.info("Dividing remaining armies %d between all border regions", armiesLeft);
         int armiesPerRegion = armiesLeft / borderRegions.size();
         int leftOvers = armiesLeft % borderRegions.size();
-        if(armiesPerRegion < 2) {
+        if (armiesPerRegion < 2) {
             armiesPerRegion = 2;
             leftOvers = armiesLeft % 2;
         }
@@ -185,15 +197,5 @@ public class BotStarter implements Bot {
 
         log.info("Round %d done", roundNum);
         return attackTransferMoves;
-    }
-
-    public static void main(String[] args) {
-        log.info("Bot Started");
-        BotParser parser = startBot(System.in, System.out, System.err);
-        parser.run();
-    }
-
-    public static BotParser startBot(InputStream in, PrintStream out, PrintStream err) {
-        return new BotParser(in, out, err, new BotStarter());
     }
 }

@@ -15,7 +15,7 @@ import map.Region;
 /**
  * This Move is used in the second part of each round. It represents the attack or transfer of armies from
  * fromRegion to toRegion. If toRegion is owned by the player himself, it's a transfer. If toRegion is
- * owned by the opponent, this Move is an attack. 
+ * owned by the opponent, this Move is an attack.
  */
 
 public class AttackTransferMove extends Move {
@@ -29,13 +29,6 @@ public class AttackTransferMove extends Move {
         this.fromRegion = fromRegion;
         this.toRegion = toRegion;
         this.armies = armies;
-    }
-
-    /**
-     * @param n Sets the number of armies of this Move
-     */
-    public void setArmies(int n) {
-        armies = n;
     }
 
     /**
@@ -57,6 +50,13 @@ public class AttackTransferMove extends Move {
      */
     public int getArmies() {
         return armies;
+    }
+
+    /**
+     * @param n Sets the number of armies of this Move
+     */
+    public void setArmies(int n) {
+        armies = n;
     }
 
     /**

@@ -1,9 +1,6 @@
 package log;
 
 import bot.AttackListRanker;
-import bot.AttackSuperRegionRanker;
-import bot.BotStarter;
-import bot.TroopMovePlanner;
 import bot.VulnerableRegionRanker;
 
 import java.util.HashMap;
@@ -15,7 +12,7 @@ import java.util.Map;
 public class LogConfig {
     private static LogConfig instance = null;
     private LogLevel rootLevel = LogLevel.INFO;
-    private Map<String,LogLevel> loggerLevels = new HashMap<>();
+    private Map<String, LogLevel> loggerLevels = new HashMap<>();
 
     private LogConfig() {
         //loggerLevels.put(BotStarter.class.getSimpleName(), LogLevel.DEBUG);
@@ -26,7 +23,7 @@ public class LogConfig {
     }
 
     public static synchronized LogConfig getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new LogConfig();
         }
 
@@ -34,7 +31,7 @@ public class LogConfig {
     }
 
     public LogLevel getLoggerLevel(String loggerName) {
-        if(loggerLevels.containsKey(loggerName)) {
+        if (loggerLevels.containsKey(loggerName)) {
             return loggerLevels.get(loggerName);
         } else {
             return rootLevel;

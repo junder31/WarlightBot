@@ -31,6 +31,7 @@ public class GameBoard {
 
     /**
      * add a Region to the map
+     *
      * @param region : Region to be added
      */
     public void add(Region region) {
@@ -44,6 +45,7 @@ public class GameBoard {
 
     /**
      * add a SuperRegion to the map
+     *
      * @param superRegion : SuperRegion to be added
      */
     public void add(SuperRegion superRegion) {

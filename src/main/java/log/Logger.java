@@ -54,7 +54,7 @@ public class Logger {
     }
 
     public synchronized void log(LogLevel level, String text, Throwable t) {
-        if( logLevelEnabled(level) ) {
+        if (logLevelEnabled(level)) {
             String messagePrefix = String.format(prefixFormat,
                     dateFormat.format(new Date()), Thread.currentThread().getName(), level, name);
             String messageBody = String.format(errorFormat, text, t.getClass().getName(), t.getMessage());
@@ -64,7 +64,7 @@ public class Logger {
     }
 
     public synchronized void log(LogLevel level, String format, Object... args) {
-        if( logLevelEnabled(level) ) {
+        if (logLevelEnabled(level)) {
             String messagePrefix = String.format(prefixFormat,
                     dateFormat.format(new Date()), Thread.currentThread().getName(), level, name);
             String messageBody = String.format(format, args);

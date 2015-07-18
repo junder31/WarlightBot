@@ -29,13 +29,6 @@ public class PlaceArmiesMove extends Move {
     }
 
     /**
-     * @param n Sets the number of armies this move will place on a Region
-     */
-    public void setArmies(int n) {
-        armies = n;
-    }
-
-    /**
      * @return The Region this Move will be placing armies on
      */
     public Region getRegion() {
@@ -47,6 +40,13 @@ public class PlaceArmiesMove extends Move {
      */
     public int getArmies() {
         return armies;
+    }
+
+    /**
+     * @param n Sets the number of armies this move will place on a Region
+     */
+    public void setArmies(int n) {
+        armies = n;
     }
 
     /**

@@ -11,7 +11,7 @@ public class AttackLookup {
     private static Map<Integer, Integer> attackLookup;
 
     private static void init() {
-        if(defenseLookup == null) {
+        if (defenseLookup == null) {
             Map<Integer, Integer> workDefenseLookup = new HashMap<>();
             Map<Integer, Integer> workAttackLookup = new HashMap<>();
             for (int i = 0; i < 1000; i++) {

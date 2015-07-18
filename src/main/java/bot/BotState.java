@@ -22,10 +22,9 @@ import java.util.List;
 
 public class BotState {
 
+    private final GameBoard fullGameBoard = new GameBoard(); //This map is known from the start, contains all the regions and how they are connected, doesn't change after initialization
     private String myName = "";
     private String opponentName = "";
-
-    private final GameBoard fullGameBoard = new GameBoard(); //This map is known from the start, contains all the regions and how they are connected, doesn't change after initialization
     private GameBoard visibleGameBoard; //This map represents everything the player can see, updated at the end of each round.
 
     private List<Region> pickableStartingRegions; //list of regions the player can choose the start from
@@ -126,21 +125,6 @@ public class BotState {
         }
     }
 
-    //regions from wich a player is able to pick his preferred starting region
-    public void setPickableStartingRegions(String[] input) {
-        pickableStartingRegions = new ArrayList<Region>();
-        for (int i = 2; i < input.length; i++) {
-            int regionId;
-            try {
-                regionId = Integer.parseInt(input[i]);
-                Region pickableRegion = fullGameBoard.getRegion(regionId);
-                pickableStartingRegions.add(pickableRegion);
-            } catch (Exception e) {
-                System.err.println("Unable to parse pickable regions " + e.getMessage());
-            }
-        }
-    }
-
     //visible regions are given to the bot with player and armies info
     public void updateMap(String[] mapInput) {
         visibleGameBoard = fullGameBoard.getMapCopy();
@@ -233,6 +217,21 @@ public class BotState {
 
     public List<Region> getPickableStartingRegions() {
         return pickableStartingRegions;
+    }
+
+    //regions from wich a player is able to pick his preferred starting region
+    public void setPickableStartingRegions(String[] input) {
+        pickableStartingRegions = new ArrayList<Region>();
+        for (int i = 2; i < input.length; i++) {
+            int regionId;
+            try {
+                regionId = Integer.parseInt(input[i]);
+                Region pickableRegion = fullGameBoard.getRegion(regionId);
+                pickableStartingRegions.add(pickableRegion);
+            } catch (Exception e) {
+                System.err.println("Unable to parse pickable regions " + e.getMessage());
+            }
+        }
     }
 
     public List<Region> getWasteLands() {

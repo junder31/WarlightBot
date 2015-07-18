@@ -33,22 +33,22 @@ public class SuperRegion {
     }
 
     public Set<Set<Region>> getMinDominatorSets() {
-        if(minDominatorSets == null) {
+        if (minDominatorSets == null) {
             List<Set<Region>> dominatorSets = findDominatorSetHelper(
                     new HashSet<>(), new HashSet<>(), new HashSet<>(subRegions));
             int minSize = dominatorSets.stream().mapToInt(Set::size).min().orElse(0);
-            minDominatorSets = dominatorSets.stream().filter( s -> s.size() == minSize).collect(Collectors.toSet());
+            minDominatorSets = dominatorSets.stream().filter(s -> s.size() == minSize).collect(Collectors.toSet());
         }
         return minDominatorSets;
     }
 
     private List<Set<Region>> findDominatorSetHelper(Set<Region> dominatorSet,
-                                                  Set<Region> dominatedRegions,
-                                                  Set<Region> remainingRegions) {
+                                                     Set<Region> dominatedRegions,
+                                                     Set<Region> remainingRegions) {
         List<Set<Region>> workDominatorSets = new ArrayList<>();
 
         Set<Region> newRemainingRegions = new HashSet<>(remainingRegions);
-        for(Region region: remainingRegions) {
+        for (Region region : remainingRegions) {
             Set<Region> newDominatorSet = new HashSet<>(dominatorSet);
             newDominatorSet.add(region);
             Set<Region> newDominatedRegions = new HashSet<>(dominatedRegions);
@@ -56,7 +56,7 @@ public class SuperRegion {
             newDominatedRegions.addAll(region.getNeighbors());
             newRemainingRegions.remove(region);
 
-            if( newDominatedRegions.containsAll(subRegions) ) {
+            if (newDominatedRegions.containsAll(subRegions)) {
                 workDominatorSets.add(newDominatorSet);
             } else {
                 workDominatorSets.addAll(findDominatorSetHelper(newDominatorSet,
@@ -65,6 +65,16 @@ public class SuperRegion {
         }
 
         return workDominatorSets;
+    }
+
+    public boolean dominatedByPlayer(String name) {
+        Set<Region> ownedRegions = subRegions.stream().filter(r -> r.ownedByPlayer(name)).collect(Collectors.toSet());
+        Set<Region> dominatedRegions = new HashSet<>();
+        for (Region r : ownedRegions) {
+            dominatedRegions.addAll(r.getNeighbors());
+        }
+
+        return dominatedRegions.containsAll(subRegions);
     }
 
     /**

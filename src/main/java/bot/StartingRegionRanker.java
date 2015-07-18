@@ -2,6 +2,7 @@ package bot;
 
 import log.Logger;
 import map.Region;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,51 +18,30 @@ public class StartingRegionRanker {
         this.pickableRegions = state.getPickableStartingRegions();
     }
 
-    public List<Region> getRankedList() {
-        pickableRegions.sort( (r1, r2) -> {
-            if( r1.getSuperRegion().getArmiesReward() == 0 && r2.getSuperRegion().getArmiesReward() > 0) {
-                return 1;
-            } else if (r2.getSuperRegion().getArmiesReward() == 0 && r1.getSuperRegion().getArmiesReward() > 0) {
-                return -1;
-            } else {
-                int turnsToTakeDiff = getTurnsToTakeSR(r1) - getTurnsToTakeSR(r2);
-                if(turnsToTakeDiff == 0) {
-                    return  r2.getSuperRegion().getArmiesReward() - r1.getSuperRegion().getArmiesReward();
-                } else {
-                    return turnsToTakeDiff;
-                }
-            }
-        } );
-
-        log.debug("Ranked Starting Regions: %s", pickableRegions);
-
-        return pickableRegions;
-    }
-
     public static int getTurnsToTakeSR(Region region) {
         Set<Region> subRegions = new HashSet<>(region.getSuperRegion().getSubRegions());
         Set<Region> ownedRegions = new HashSet<>();
         ownedRegions.add(region);
         int i = 0;
 
-        while( !ownedRegions.containsAll(subRegions) ) {
+        while (!ownedRegions.containsAll(subRegions)) {
             Set<Region> newOwnedRegions = new HashSet<>(ownedRegions);
-            for(Region r : ownedRegions) {
+            for (Region r : ownedRegions) {
                 newOwnedRegions.addAll(r.getNeighbors());
             }
             ownedRegions = newOwnedRegions;
             i++;
         }
 
-        return Math.max(i, (int)Math.ceil( (1.0 * getArmiesToTakeSR(region)) / Settings.STARTING_ARMIES_PER_TURN ) );
+        return Math.max(i, (int) Math.ceil((1.0 * getArmiesToTakeSR(region)) / Settings.STARTING_ARMIES_PER_TURN));
     }
 
     public static int getArmiesToTakeSR(Region region) {
         Set<Region> subRegions = new HashSet<>(region.getSuperRegion().getSubRegions());
         int armiesToTake = 0;
 
-        for(Region r : subRegions) {
-            if(r.equals(region)) {
+        for (Region r : subRegions) {
+            if (r.equals(region)) {
                 armiesToTake--;
             } else {
                 int armiesInRegion = r.isWasteland() ? Settings.WASTELAND_ARMIES : Settings.NORMAL_ARMIES;
@@ -70,5 +50,26 @@ public class StartingRegionRanker {
         }
 
         return armiesToTake;
+    }
+
+    public List<Region> getRankedList() {
+        pickableRegions.sort((r1, r2) -> {
+            if (r1.getSuperRegion().getArmiesReward() == 0 && r2.getSuperRegion().getArmiesReward() > 0) {
+                return 1;
+            } else if (r2.getSuperRegion().getArmiesReward() == 0 && r1.getSuperRegion().getArmiesReward() > 0) {
+                return -1;
+            } else {
+                int turnsToTakeDiff = getTurnsToTakeSR(r1) - getTurnsToTakeSR(r2);
+                if (turnsToTakeDiff == 0) {
+                    return r2.getSuperRegion().getArmiesReward() - r1.getSuperRegion().getArmiesReward();
+                } else {
+                    return turnsToTakeDiff;
+                }
+            }
+        });
+
+        log.debug("Ranked Starting Regions: %s", pickableRegions);
+
+        return pickableRegions;
     }
 }

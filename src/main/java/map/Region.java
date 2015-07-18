@@ -12,7 +12,6 @@ package map;
 
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Objects;
 import java.util.Set;
 
 
@@ -69,9 +68,9 @@ public class Region {
         visited.add(this);
         neighbors.addAll(this.getNeighbors());
 
-        while( !neighbors.contains(otherRegion) ) {
+        while (!neighbors.contains(otherRegion)) {
             Set<Region> newNeighbors = new HashSet<>();
-            for(Region region : neighbors) {
+            for (Region region : neighbors) {
                 newNeighbors.addAll(region.getNeighbors());
             }
             visited.addAll(neighbors);
@@ -95,20 +94,6 @@ public class Region {
      */
     public boolean ownedByPlayer(String playerName) {
         return playerName.equals(this.playerName);
-    }
-
-    /**
-     * @param armies Sets the number of armies that are on this Region
-     */
-    public void setArmies(int armies) {
-        this.armies = armies;
-    }
-
-    /**
-     * @param playerName Sets the Name of the player that this Region belongs to
-     */
-    public void setPlayerName(String playerName) {
-        this.playerName = playerName;
     }
 
     /**
@@ -140,10 +125,24 @@ public class Region {
     }
 
     /**
+     * @param armies Sets the number of armies that are on this Region
+     */
+    public void setArmies(int armies) {
+        this.armies = armies;
+    }
+
+    /**
      * @return A string with the name of the player that owns this region
      */
     public String getPlayerName() {
         return playerName;
+    }
+
+    /**
+     * @param playerName Sets the Name of the player that this Region belongs to
+     */
+    public void setPlayerName(String playerName) {
+        this.playerName = playerName;
     }
 
     @Override

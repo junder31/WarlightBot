@@ -2,7 +2,6 @@ package bot;
 
 import map.Region;
 import map.SuperRegion;
-import move.Move;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,10 +31,10 @@ public class SuperRegionAttackStrategy {
         armies = 0;
         turns = 0;
 
-        while( !ownedRegions.containsAll(superRegion.getSubRegions()) ) {
+        while (!ownedRegions.containsAll(superRegion.getSubRegions())) {
             recruitedArmies += armiesPerTurn;
             List<Region> conqueredRegions = new ArrayList<>();
-            for(Region region : ownedRegions) {
+            for (Region region : ownedRegions) {
 
             }
         }

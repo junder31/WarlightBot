@@ -20,16 +20,13 @@ import java.util.List;
 import java.util.Scanner;
 
 public class BotParser {
+    final Scanner scan;
+    final Bot bot;
     private final PrintStream out;
     private final PrintStream err;
-
-    final Scanner scan;
-
-    final Bot bot;
-
     BotState currentState;
 
-    public BotParser(InputStream in, PrintStream out, PrintStream err,Bot bot) {
+    public BotParser(InputStream in, PrintStream out, PrintStream err, Bot bot) {
         this.out = out;
         this.err = err;
         this.scan = new Scanner(in);

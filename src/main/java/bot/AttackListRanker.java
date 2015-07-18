@@ -5,10 +5,13 @@ import map.GameBoard;
 import map.Region;
 import map.SuperRegion;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
-import static bot.Settings.*;
+
+import static bot.Settings.ENEMY_OWNERSHIP_FACTOR;
 
 /**
  * Created by johnunderwood on 7/11/15.
@@ -33,30 +36,57 @@ public class AttackListRanker {
         List<SuperRegion> rankedSuperRegions = new AttackSuperRegionRanker(state).getRankedSuperRegions();
 
         unownedNeighbors.sort((r1, r2) -> {
-            if( isNeutralRegionInEnemySuperRegion(r1) && !isNeutralRegionInEnemySuperRegion(r2) ) {
+            boolean isR1NeutralInEnemySr = isNeutralRegionInEnemySuperRegion(r1);
+            boolean isR2NeutralInEnemySr = isNeutralRegionInEnemySuperRegion(r2);
+            if (isR1NeutralInEnemySr && !isR2NeutralInEnemySr) {
                 return 1;
-            } else if( isNeutralRegionInEnemySuperRegion(r2) && !isNeutralRegionInEnemySuperRegion(r1) ) {
+            } else if (isR2NeutralInEnemySr && !isR1NeutralInEnemySr) {
                 return -1;
-            } else if(rankedSuperRegions.indexOf(r1.getSuperRegion()) == rankedSuperRegions.indexOf(r2.getSuperRegion()) ) {
-                int weightedR1Armies = r1.ownedByPlayer(enemyName) ?
-                        (int)Math.floor(r1.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r1.getArmies();
-                int weightedR2Armies = r2.ownedByPlayer(enemyName) ?
-                        (int)Math.floor(r2.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r2.getArmies();
-                return weightedR1Armies - weightedR2Armies;
             } else {
-                return rankedSuperRegions.indexOf(r1.getSuperRegion()) - rankedSuperRegions.indexOf(r2.getSuperRegion());
+                int r1SrRank = rankedSuperRegions.indexOf(r1.getSuperRegion());
+                int r2SrRank = rankedSuperRegions.indexOf(r2.getSuperRegion());
+                if (r1SrRank == r2SrRank) {
+                    if (r1.getSuperRegion().dominatedByPlayer(myName) && r2.getSuperRegion().dominatedByPlayer(myName)) {
+                        int weightedR1Armies = r1.ownedByPlayer(enemyName) ?
+                                (int) Math.floor(r1.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r1.getArmies();
+                        int weightedR2Armies = r2.ownedByPlayer(enemyName) ?
+                                (int) Math.floor(r2.getArmies() * ENEMY_OWNERSHIP_FACTOR) : r2.getArmies();
+                        return weightedR1Armies - weightedR2Armies;
+                    } else {
+                        return dominatorScore(r2) - dominatorScore(r1);
+                    }
+                } else {
+                    return r1SrRank - r2SrRank;
+                }
             }
         });
 
-        log.debug("RankedAttackList: %s", unownedNeighbors);
+        Map<SuperRegion,Integer> srAttackCounts = new HashMap<>();
+        List<Region> filteredAttackList = new ArrayList<>();
 
-        return unownedNeighbors;
+        for(Region r : unownedNeighbors) {
+            if(r.getSuperRegion().dominatedByPlayer(myName)) {
+                filteredAttackList.add(r);
+            } else {
+                if(!srAttackCounts.containsKey(r.getSuperRegion())){
+                    srAttackCounts.put(r.getSuperRegion(), 0);
+                }
+
+                if(srAttackCounts.get(r.getSuperRegion()) < 2) {
+                    filteredAttackList.add(r);
+                    srAttackCounts.put(r.getSuperRegion(), srAttackCounts.get(r.getSuperRegion()) + 1);
+                }
+            }
+        }
+
+        log.debug("RankedAttackList: %s", filteredAttackList);
+
+        return filteredAttackList;
     }
 
-//    public boolean isADominator(Region r) {
-//        Set<Set<Region>> dominatorSets = r.getSuperRegion().getMinDominatorSets();
-//        for(Set<R>)
-//    }
+    public int dominatorScore(Region region) {
+        return (int) region.getSuperRegion().getMinDominatorSets().stream().filter(s -> s.contains(region)).count();
+    }
 
     public boolean isNeutralRegionInEnemySuperRegion(Region region) {
         return region.ownedByPlayer("neutral") && region.getSuperRegion().getSubRegions().stream()

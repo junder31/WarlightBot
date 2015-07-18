@@ -116,7 +116,9 @@ public class BotState {
             for (i = 2; i < mapInput.length; i++) {
                 try {
                     wastelandId = Integer.parseInt(mapInput[i]);
-                    wastelands.add(fullGameBoard.getRegion(wastelandId));
+                    Region region = fullGameBoard.getRegion(wastelandId);
+                    wastelands.add(region);
+                    region.setIsWasteland(true);
                 } catch (Exception e) {
                     System.err.println("Unable to parse wastelands " + e.getMessage());
                 }

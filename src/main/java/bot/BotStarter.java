@@ -30,28 +30,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class BotStarter implements Bot {
-    private Map<Integer, Integer> defenseLookup;
-    private Map<Integer, Integer> attackLookup;
+
     private static Logger log = new Logger(BotStarter.class.getSimpleName());
     private List<AttackTransferMove> attackMoves = new ArrayList<>();
     private int roundNum = 0;
     private int armiesLeft = 0;
 
     public BotStarter() {
-        defenseLookup = new HashMap<>();
-        attackLookup = new HashMap<>();
-        for (int i = 0; i < 1000; i++) {
-            int worstCaseAttack = (int) Math.round(((i * Settings.DEFENSE_KILL_RATE) * (1 - Settings.LUCK_FACTOR)));
-            defenseLookup.put(i, worstCaseAttack);
-        }
 
-        for (int key : defenseLookup.keySet()) {
-            int value = defenseLookup.get(key);
-            if (!attackLookup.containsKey(value) || attackLookup.get(value) > key) {
-                attackLookup.put(value, key);
-            }
-        }
-        attackLookup.put(1, 2);
     }
 
     /**
@@ -60,20 +46,8 @@ public class BotStarter implements Bot {
      * This method returns one random region from the given pickable regions.
      */
     public Region getStartingRegion(BotState state, Long timeOut) {
-        state.updateMap(new String[0]);
-        List<Region> pickableRegions = state.getPickableStartingRegions();
-        List<SuperRegion> superRegionRank = new AttackSuperRegionRanker(state).getRankedSuperRegions();
-        Region selectedRegion = null;
-        int superRegionRankIdx = superRegionRank.size();
-        for (Region region : pickableRegions) {
-            int regionSuperRegionRankIdx = superRegionRank.indexOf(region.getSuperRegion());
-            if (regionSuperRegionRankIdx < superRegionRankIdx) {
-                selectedRegion = region;
-                superRegionRankIdx = regionSuperRegionRankIdx;
-            }
-        }
-
-        return selectedRegion != null ? selectedRegion : state.getPickableStartingRegions().stream().findAny().get();
+        Region selectedRegion = new StartingRegionRanker(state).getRankedList().get(0);
+        return selectedRegion;
     }
 
     @Override
@@ -95,7 +69,7 @@ public class BotStarter implements Bot {
 
             for (Region attackRegion : attackRegions) {
                 log.debug("Selected best region to attack " + attackRegion);
-                int requiredArmies = attackLookup.get(attackRegion.getArmies());
+                int requiredArmies = AttackLookup.getUnitRequiredToAttack(attackRegion.getArmies());
                 log.debug("Armies required to attack %d", requiredArmies);
                 List<Region> neighbors = attackRegion.getNeighbors().stream()
                         .filter(r -> r.ownedByPlayer(myName)).collect(Collectors.toList());
@@ -203,8 +177,8 @@ public class BotStarter implements Bot {
      */
     public List<AttackTransferMove> getAttackTransferMoves(BotState state, Long timeOut) {
         ArrayList<AttackTransferMove> attackTransferMoves = new ArrayList<>();
-        attackTransferMoves.addAll(attackMoves);
         attackTransferMoves.addAll(new TroopMovePlanner(state).getTransferMoves());
+        attackTransferMoves.addAll(attackMoves);
 
         log.info("Round %d done", roundNum);
         return attackTransferMoves;

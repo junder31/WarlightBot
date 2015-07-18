@@ -23,6 +23,7 @@ public class Region {
     private SuperRegion superRegion;
     private int armies;
     private String playerName;
+    private boolean isWasteland = false;
 
     public Region(int id, SuperRegion superRegion) {
         this.id = id;
@@ -34,14 +35,23 @@ public class Region {
         superRegion.addSubRegion(this);
     }
 
-    public Region(int id, SuperRegion superRegion, String playerName, int armies) {
+    public Region(int id, SuperRegion superRegion, String playerName, int armies, boolean isWasteland) {
         this.id = id;
         this.superRegion = superRegion;
         this.neighbors = new LinkedList<>();
         this.playerName = playerName;
         this.armies = armies;
+        this.isWasteland = isWasteland;
 
         superRegion.addSubRegion(this);
+    }
+
+    public boolean isWasteland() {
+        return isWasteland;
+    }
+
+    public void setIsWasteland(boolean isWasteland) {
+        this.isWasteland = isWasteland;
     }
 
     public void addNeighbor(Region neighbor) {

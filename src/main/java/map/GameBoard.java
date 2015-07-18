@@ -67,7 +67,8 @@ public class GameBoard {
         }
         for (Region r : regions) //copy regions
         {
-            Region newRegion = new Region(r.getId(), newGameBoard.getSuperRegion(r.getSuperRegion().getId()), r.getPlayerName(), r.getArmies());
+            Region newRegion = new Region(r.getId(), newGameBoard.getSuperRegion(r.getSuperRegion().getId()),
+                    r.getPlayerName(), r.getArmies(), r.isWasteland());
             newGameBoard.add(newRegion);
         }
         for (Region r : regions) //add neighbors to copied regions
